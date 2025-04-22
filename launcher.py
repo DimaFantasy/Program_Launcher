@@ -19,7 +19,7 @@ MARK_MISSING_FILES = True  # Отмечать отсутствующие фай�
 MAX_MISSING_FILES = 0  # 0 = без ограничений
 
 # Серверные настройки
-TEMPLATE_PATH = "launcher_v2"
+TEMPLATE_PATH = "launcher"
 SERVER_PORT = 8077
 
 app = Flask(__name__)
