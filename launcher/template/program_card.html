@@ -1,0 +1,27 @@
+<!-- Шаблон для карточки программы в обычной категории -->
+<div class="col program-card" data-name="{program_name_lower}" data-category="{category_lower}" data-description="{description_lower}">
+    <div class="card h-100">
+        <div class="card-body position-relative">
+            <button class="btn-favorite {favorite_class}" onclick="toggleFavorite('{encoded_path}', event)" title="{favorite_title}"><i class="bi bi-star{favorite_icon}"></i></button>
+            <button class="btn-remove" onclick="removeProgram('{encoded_path}', event)" title="Удалить программу из списка"><i class="bi bi-x-circle"></i></button>
+            <h5 class="card-title">{program_icon} {program_name}</h5>
+            <p class="card-text" style="white-space: pre-line;">{description}</p>
+            <div class="d-flex justify-content-end mb-2">
+                <button class="btn btn-sm btn-outline-secondary" onclick="showDescriptionModal('{encoded_path}', event)" data-description="{description_attr}" title="Редактировать описание"><i class="bi bi-pencil"></i></button>
+            </div>
+            <hr class="my-2">
+            <p class="program-path"><small>Путь:</small> <strong>{program_path}</strong></p>
+        </div>
+        <div class="card-footer bg-transparent border-0">
+            <div class="btn-actions">
+                <button class="btn btn-sm btn-launch text-white flex-grow-1" onclick="launchProgram('{encoded_path}', event)"><i class="bi bi-play-fill"></i> Запустить</button>
+                <button class="btn btn-sm btn-folder text-white" onclick="openFolder('{encoded_path}', event)" title="Открыть папку с программой"><i class="bi bi-folder2-open"></i></button>
+                <button class="btn btn-sm btn-info text-white change-category-btn" 
+                        onclick="showCategoryModal('{encoded_path}', '{category_attr}', event)" 
+                        data-path="{encoded_path}" 
+                        data-category="{category_attr}" 
+                        title="Изменить категорию"><i class="bi bi-folder-symlink"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
