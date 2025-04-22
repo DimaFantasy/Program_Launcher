@@ -25,7 +25,8 @@ scan_status = {
 # Глобальные переменные
 EXECUTABLE = None
 BASE_DIRECTORY = None
-SOFT_DIRECTORY = None
+# Убираем SOFT_DIRECTORY, будем использовать BASE_DIRECTORY напрямую
+# SOFT_DIRECTORY = None
 # Переменные, которые будут установлены через функцию set_program_list
 _executable_extensions = None
 _ignore_extensions = None
@@ -34,9 +35,9 @@ _excluded_filenames = None
 
 def set_scan_base_directory(base_dir):
     """Устанавливает базовую директорию для сканирования"""
-    global BASE_DIRECTORY, SOFT_DIRECTORY
+    global BASE_DIRECTORY # Убираем SOFT_DIRECTORY
     BASE_DIRECTORY = base_dir
-    SOFT_DIRECTORY = os.path.join(base_dir, 'SOFT')
+    # SOFT_DIRECTORY = os.path.join(base_dir, 'SOFT') # Убираем эту строку
 
 def set_program_list(programs, program_info_class=None, exts=None, excluded_dirs=None, excluded_files=None, ignore_exts=None):
     """Устанавливает список программ и параметры для сканирования"""
@@ -132,12 +133,12 @@ def scan_process(save_program_list_func):
 
     try:
         # Проверка базовых условий
-        if not BASE_DIRECTORY or not SOFT_DIRECTORY:
+        if not BASE_DIRECTORY: # Убираем проверку SOFT_DIRECTORY
             raise ValueError("Не установлена базовая директория")
 
-        if not os.path.exists(SOFT_DIRECTORY):
-            # Исправлено: ValueValueError -> ValueError
-            raise ValueError(f"Директория SOFT не найдена: {SOFT_DIRECTORY}")
+        # Убираем проверку на существование SOFT_DIRECTORY
+        # if not os.path.exists(SOFT_DIRECTORY):
+        #     raise ValueError(f"Директория SOFT не найдена: {SOFT_DIRECTORY}")
 
         if EXECUTABLE is None:
             raise ValueError("Список программ не инициализирован")
@@ -151,6 +152,7 @@ def scan_process(save_program_list_func):
         # --- Конец блока подсчета ---
 
         # 1. Сканирование директории и поиск новых программ
+        # Используем BASE_DIRECTORY вместо SOFT_DIRECTORY
         found_programs = find_executable_files()
 
         # 2. Сравнение со списком и обновление (добавление новых)
@@ -216,48 +218,54 @@ def scan_process(save_program_list_func):
         return f"Ошибка при сканировании: {str(e)}"
 
 def find_executable_files():
-    """Находит исполняемые файлы в директории SOFT"""
+    """Находит исполняемые файлы в базовой директории"""
     global scan_status
-    
+
     found_programs = []
-    
+
     # Подсчитываем общее количество файлов для прогресса
-    file_count = sum(len(files) for _, _, files in os.walk(SOFT_DIRECTORY))
+    # Используем BASE_DIRECTORY вместо SOFT_DIRECTORY
+    file_count = sum(len(files) for _, _, files in os.walk(BASE_DIRECTORY))
     scan_status["total_files"] = file_count
-    
+
     # Сканируем директорию
-    for root, dirs, files in os.walk(SOFT_DIRECTORY):
-        # Пропускаем исключенные директории
-        dirs[:] = [d for d in dirs if d not in _excluded_dirs]
-        
+    # Используем BASE_DIRECTORY вместо SOFT_DIRECTORY
+    for root, dirs, files in os.walk(BASE_DIRECTORY):
+        # Пропускаем исключенные директории и саму директорию launcher
+        dirs[:] = [d for d in dirs if d not in _excluded_dirs and os.path.join(root, d) != os.path.join(BASE_DIRECTORY, 'launcher')]
+
+        # Пропускаем файлы в корневой директории и в директории launcher
+        if root == BASE_DIRECTORY or root.startswith(os.path.join(BASE_DIRECTORY, 'launcher')):
+             continue
+
         for file in files:
             # Обновляем статус сканирования
             scan_status["scanned_files"] += 1
             scan_status["last_file"] = file
-            
+
             # Вычисляем прогресс
             if scan_status["total_files"] > 0:
                 scan_status["progress"] = int((scan_status["scanned_files"] / scan_status["total_files"]) * 100)
-            
+
             # Пропускаем файлы из списка исключений
             if file in _excluded_filenames:
                 continue
-                
+
             # Проверяем расширение файла
             _, ext = os.path.splitext(file.lower())
             if ext in _ignore_extensions:
                 continue
-                
+
             if ext in _executable_extensions:
                 file_path = os.path.join(root, file)
-                
+
                 # Получаем относительный путь
                 rel_path = os.path.relpath(file_path, BASE_DIRECTORY)
-                rel_path = rel_path.replace('\\', '/')  # Нормализуем для Windows
-                
+                rel_path = rel_path.replace('\\\\', '/')  # Нормализуем для Windows
+
                 # Добавляем в список найденных программ
                 found_programs.append(rel_path)
-    
+
     return found_programs
 
 def update_program_list(found_paths, save_program_list_func):
@@ -276,38 +284,37 @@ def update_program_list(found_paths, save_program_list_func):
     for path in new_paths:
         # Определяем категорию на основе пути
         path_parts = path.split('/')
-        category = "Прочее"
-        # Исправлено: 'и' на 'and'
-        if len(path_parts) > 1 and path_parts[0].lower() == "soft":
-            category = path_parts[1] if len(path_parts) > 2 else "Прочее"
+        category = "Прочее" # Значение по умолчанию
+        # Категорией будет первая папка в пути
+        if len(path_parts) > 1:
+            category = path_parts[0]
 
         # Получаем полный путь к файлу
-        
         full_path = os.path.join(BASE_DIRECTORY, path)
-        
-        # --- Используем format_file_info для получения описания --- 
+
+        # --- Используем format_file_info для получения описания ---
         description = format_file_info(full_path)
         if not description or description.startswith("Файл не найден") or description.startswith("Ошибка"):
             # Если format_file_info не вернула полезной информации, используем имя файла
             file_name = os.path.basename(path)
             description = f"Программа {file_name}"
-        # --- Конец использования format_file_info --- 
+        # --- Конец использования format_file_info ---
 
         # Экранируем HTML для безопасного отображения КАТЕГОРИИ
         category_safe = escape_html(category)
         # НЕ экранируем описание здесь, сделаем это при рендеринге
         description_safe = description # Store the raw description with newlines
-        
+
         # Создаем новый объект программы
         program = ProgramInfo(path, category_safe, description_safe) # Use raw description here
         program.original_category = category
         program.original_description = description # Сохраняем неэкранированное полное описание
-        
+
         # Добавляем программу в список
         EXECUTABLE.append(program)
         new_count += 1
         scan_status["new_programs"] += 1
-    
+
     # Возвращаем количество новых программ
     return new_count
 
