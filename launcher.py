@@ -9,17 +9,19 @@ from markupsafe import escape
 APPLICATION_NAME = "USB Bootable Tools Launcher v2"
 
 # Настройки сканирования
+# Расширения файлов, которые считаются исполняемыми
 EXECUTABLE_EXTENSIONS = ['.exe', '.bat', '.cmd', '.msi', '.com', '.app', '.py', '.ps1', '.jar']
+# Расширения файлов, которые следует игнорировать при сканировании
 IGNORE_EXTENSIONS = ['.dll', '.ini', '.txt', '.dat', '.db', '.log', '.sys']
+# Директории, которые следует исключить из сканирования
 EXCLUDED_DIRS = ['__pycache__', 'venv', '.git', '.vscode', 'node_modules', 'tmp']
+# Имена файлов, которые следует исключить из сканирования
 EXCLUDED_FILENAMES = ['uninstall.exe', 'setup.exe', 'installer.exe', 'install.exe', 'updater.exe']
 
-# Настройки отметки файлов
-MARK_MISSING_FILES = True  # Отмечать отсутствующие файлы "[не найдено]"
-MAX_MISSING_FILES = 0  # 0 = без ограничений
-
 # Серверные настройки
+# Путь к директории с шаблонами Flask
 TEMPLATE_PATH = "launcher"
+# Порт, на котором будет запущен веб-сервер
 SERVER_PORT = 8077
 
 app = Flask(__name__)
