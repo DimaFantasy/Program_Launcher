@@ -386,8 +386,7 @@ def update_program_list(new_paths, save_program_list_func, weight_format_info):
         # --- Конец получения информации ---
 
         # Определяем категорию
-        path_parts = path.split('/')
-        category = path_parts[0]  if len(path_parts) > 1 else "Прочее"
+        category = extract_category_from_path(full_path, BASE_DIRECTORY)
 
         if not description or description.startswith("Файл not найден") or description.startswith("Ошибка"):
             description = f"Программа {current_file_name}" # Используем имя файла как fallback
@@ -494,3 +493,80 @@ def apply_scan_changes(save_program_list_func):
 
     print(f"Удалено {removed_count} записей из списка программ.")
     return f"Удалено {removed_count} ложных ссылок на файлы из списка."
+
+def extract_category_from_path(file_path, root_directory):
+    """
+    Извлекает категорию из пути к файлу.
+    Категория - это первая папка с конца в пути к файлу относительно корневой директории.
+    Если файл находится в корне, возвращает "найдено".
+    """
+    # Получаем относительный путь от корневой директории
+    rel_path = os.path.relpath(file_path, root_directory)
+    path_parts = rel_path.split(os.sep)
+    
+    # Если путь содержит более одного элемента (не в корне)
+    if len(path_parts) > 1:
+        # Берем первую папку из пути (не считая имени файла)
+        return path_parts[0]
+    else:
+        # Если файл в корне, возвращаем "найдено"
+        return "найдено"
+
+def scan_directory(directory, program_list, program_info_class, extensions, excluded_dirs, excluded_filenames):
+    """
+    Сканирует директорию на наличие исполняемых файлов.
+    
+    Args:
+        directory (str): Путь к директории для сканирования
+        program_list (list): Список программ
+        program_info_class (class): Класс для создания объектов программ
+        extensions (list): Список расширений файлов, которые считаются исполняемыми
+        excluded_dirs (list): Список директорий, которые следует исключить из сканирования
+        excluded_filenames (list): Список имен файлов, которые следует исключить из сканирования
+    
+    Returns:
+        list: Обновленный список программ
+    """
+    # ...existing code...
+    
+    for root, dirs, files in os.walk(directory):
+        # Исключаем директории, которые следует пропустить
+        dirs[:] = [d for d in dirs if d.lower() not in [e.lower() for e in excluded_dirs]]
+        
+        for file in files:
+            # Проверяем, не исключено ли имя файла
+            if file.lower() in [e.lower() for e in excluded_filenames]:
+                continue
+                
+            # Проверяем расширение файла
+            file_ext = os.path.splitext(file)[1].lower()
+            if file_ext not in extensions:
+                continue
+                
+            # Полный путь к файлу
+            file_path = os.path.join(root, file)
+            
+            # Проверяем, есть ли такой файл уже в списке
+            duplicate = False
+            for prog in program_list:
+                if prog.path == file_path:
+                    duplicate = True
+                    break
+            
+            if duplicate:
+                continue
+            
+            # Определяем категорию программы по пути к файлу
+            category = extract_category_from_path(file_path, directory)
+            
+            # Создаем новый объект программы и добавляем его в список
+            new_program = program_info_class(
+                name=os.path.splitext(file)[0],
+                path=file_path,
+                category=category,
+                description="",
+                icon=""
+            )
+            program_list.append(new_program)
+    
+    return program_list

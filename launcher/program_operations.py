@@ -58,7 +58,7 @@ def remove_program(program_path_to_remove, save_func):
         # Нормализуем путь из списка перед сравнением
         normalized_program_path_in_list = os.path.normpath(program.path) 
         
-        print(f"Сравнение '{normalized_path_to_remove}' с '{normalized_program_path_in_list}' (из {program.path})")
+        # print(f"Сравнение '{normalized_path_to_remove}' с '{normalized_program_path_in_list}' (из {program.path})")
         
         # Сравниваем нормализованные пути
         if normalized_program_path_in_list == normalized_path_to_remove:

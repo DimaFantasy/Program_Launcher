@@ -1,6 +1,7 @@
 import os
 import threading
 import sys
+import socket
 
 from flask import Flask, Response
 from markupsafe import escape
@@ -23,6 +24,8 @@ EXCLUDED_FILENAMES = ['uninstall.exe', 'setup.exe', 'installer.exe', 'install.ex
 TEMPLATE_PATH = "launcher"
 # Порт, на котором будет запущен веб-сервер
 SERVER_PORT = 8077
+# Максимальный порт для поиска (если предыдущие заняты)
+MAX_PORT = 8100
 
 app = Flask(__name__)
 
@@ -70,6 +73,22 @@ def index():
     """Отображает главную страницу приложения"""
     return template_engine.generate_main_page(APPLICATION_NAME, EXECUTABLE, CATEGORY_ICONS)
 
+def is_port_available(port):
+    """Проверяет, доступен ли указанный порт"""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(('0.0.0.0', port))
+            return True
+        except socket.error:
+            return False
+
+def find_available_port(start_port, max_port):
+    """Ищет доступный порт, начиная с указанного и до максимального значения"""
+    for port in range(start_port, max_port + 1):
+        if is_port_available(port):
+            return port
+    return None
+
 def main():
     """Запускает программу и веб-сервер"""
     print("Загрузка программы...")
@@ -91,13 +110,21 @@ def main():
     # Устанавливаем переменную окружения для подавления предупреждений Flask
     os.environ['WERKZEUG_SILENCE_LOGGING'] = '1'
     
+    # Находим свободный порт
+    available_port = find_available_port(SERVER_PORT, MAX_PORT)
+    if available_port is None:
+        print(f"Не удалось найти свободный порт в диапазоне {SERVER_PORT}-{MAX_PORT}")
+        return
+    else:
+        print(f"Используется порт: {available_port}")
+    
     # Запуск сервера в отдельном потоке
-    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=SERVER_PORT, use_reloader=False), daemon=True).start()
+    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=available_port, use_reloader=False), daemon=True).start()
     
     # Открываем браузер
-    open_browser(SERVER_PORT)
+    open_browser(available_port)
     
-    print(f"Сервер запущен на порту {SERVER_PORT}. Нажмите Enter для остановки.")
+    print(f"Сервер запущен на порту {available_port}. Нажмите Enter для остановки.")
     input()
     os._exit(0)
 
