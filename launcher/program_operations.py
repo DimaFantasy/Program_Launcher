@@ -38,46 +38,49 @@ def change_description(program_path, new_description, save_program_list_func):
             return True
     return False
 
-def remove_program(program_path, save_program_list_func):
+def remove_program(program_path_to_remove, save_func):
     """Удаляет программу из списка"""
     global EXECUTABLE
-    original_count = len(EXECUTABLE)
     
-    # Нормализуем путь для сравнения (заменяем обратные слеши на прямые)
-    program_path_normalized = program_path.replace('\\', '/') # Use normalized path for comparison
-
-    # Логируем для отладки
-    print(f"--- Удаление программы ---")
-    print(f"Получен путь для удаления: {program_path}")
-    print(f"Нормализованный путь для удаления: {program_path_normalized}")
-    print(f"Текущее количество программ: {original_count}")
-
-    # Создаем новый список без удаляемой программы
-    new_programs = []
+    print("--- Удаление программы ---")
+    print(f"Получен путь для удаления: {program_path_to_remove}")
+    
+    # Нормализуем входной путь (например, к формату ОС)
+    normalized_path_to_remove = os.path.normpath(program_path_to_remove)
+    print(f"Нормализованный путь для удаления (входной): {normalized_path_to_remove}")
+    
+    print(f"Текущее количество программ: {len(EXECUTABLE)}")
+    
     program_found = False
-    for program in EXECUTABLE:
-        # Логируем путь из списка для сравнения
-        print(f"Сравнение с программой: {program.path}")
-        if program.path == program_path_normalized:
+    index_to_remove = -1 # Индекс для удаления
+    
+    for i, program in enumerate(EXECUTABLE):
+        # Нормализуем путь из списка перед сравнением
+        normalized_program_path_in_list = os.path.normpath(program.path) 
+        
+        print(f"Сравнение '{normalized_path_to_remove}' с '{normalized_program_path_in_list}' (из {program.path})")
+        
+        # Сравниваем нормализованные пути
+        if normalized_program_path_in_list == normalized_path_to_remove:
+            print(f"  -> Найдено совпадение! Индекс для удаления: {i}")
+            index_to_remove = i
             program_found = True
-            print(f"  -> Найдено совпадение, программа будет удалена.")
+            break # Выходим из цикла после нахождения
         else:
-            new_programs.append(program)
             print(f"  -> Нет совпадения.")
 
-    # Обновляем глобальный список, если программа была найдена
     if program_found:
-        EXECUTABLE[:] = new_programs # Update the global list in place
-        removed = True
-        print(f"Программа удалена: {program_path_normalized}")
-        save_program_list_func()
+        removed_program = EXECUTABLE.pop(index_to_remove)
+        print(f"Программа по пути '{removed_program.path}' удалена из списка.") # Используем path вместо name
+        print("Вызов функции сохранения...")
+        result = save_func() # Вызываем сохранение
+        print("--- Завершение удаления (успешно) ---")
+        return result
     else:
-        removed = False
-        print(f"Программа не найдена для удаления: {program_path_normalized}")
-        # Выводим все пути в списке для детальной отладки
+        print(f"Программа не найдена для удаления: {normalized_path_to_remove}")
+        # Вывод текущих путей для отладки
         print("Текущие пути в списке EXECUTABLE:")
         for p in EXECUTABLE:
-            print(f"  - {p.path}")
-
-    print(f"--- Завершение удаления ---")
-    return removed
+            print(f"  - {p.path} (нормализованный: {os.path.normpath(p.path)})")
+        print("--- Завершение удаления (не найдено) ---")
+        return False # Возвращаем False, если программа не найдена

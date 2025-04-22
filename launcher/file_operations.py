@@ -27,7 +27,16 @@ def load_program_list(program_class=None, base_directory=None):
     list_path = os.path.join(base_dir, 'list.txt')
     
     if not os.path.exists(list_path):
-        print("Файл list.txt не найден!")
+        print("Файл list.txt не найден! Создаем пустой файл.")
+        try:
+            # Создаем директорию, если она не существует
+            os.makedirs(os.path.dirname(list_path), exist_ok=True)
+            # Создаем пустой файл
+            with open(list_path, 'w', encoding='utf-8') as f:
+                pass
+            print(f"Создан пустой файл list.txt в {list_path}")
+        except Exception as e:
+            print(f"Ошибка при создании файла list.txt: {str(e)}")
         return [], {}
     
     # Пробуем разные кодировки

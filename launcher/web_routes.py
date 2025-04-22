@@ -1,7 +1,7 @@
 import os
 import json
 import traceback
-from flask import request, Response
+from flask import request, Response, jsonify, abort
 from file_description import get_file_description
 from file_operations import rename_category, change_file_category
 from api_utils import handle_api_error, get_validated_param
@@ -22,6 +22,10 @@ def init_web_routes(flask_app, programs, base_dir, load_programs, save_programs)
     load_program_list_func = load_programs
     save_program_list_func = save_programs
     
+    print("--- [DEBUG][web_routes] init_web_routes вызвана ---")
+    print(f"--- [DEBUG][web_routes] Получен список EXECUTABLE: {'Да' if EXECUTABLE is not None else 'Нет'}, Длина: {len(EXECUTABLE) if EXECUTABLE is not None else 'N/A'} ---")
+    print(f"--- [DEBUG][web_routes] Получена функция save_program_list: {'Да' if callable(save_program_list_func) else 'Нет'} ---")
+    
     # Регистрируем маршруты
     register_routes()
     
@@ -29,8 +33,8 @@ def init_web_routes(flask_app, programs, base_dir, load_programs, save_programs)
 
 def register_routes():
     """Регистрирует все маршруты API"""
-    # Импортируем зависимости
-    from program_operations import toggle_favorite, change_description, remove_program
+    # Импортируем зависимости, переименовывая remove_program для избежания конфликта
+    from program_operations import toggle_favorite, change_description, remove_program as remove_program_from_list
     from scan_operations import start_scan_in_thread, get_scan_status
     from program_launcher import launch_program, handle_open_folder
     
@@ -40,7 +44,9 @@ def register_routes():
         """Запускает программу по указанному пути"""
         try:
             program_path = get_validated_param('path')
-            return launch_program(program_path, BASE_DIRECTORY)
+            # Нормализуем путь перед передачей для унификации (например, обработка '\' и '/')
+            normalized_path = os.path.normpath(program_path)
+            return launch_program(normalized_path, BASE_DIRECTORY)
         except Exception as e:
             return handle_api_error(e, "при запуске программы")
     
@@ -55,8 +61,11 @@ def register_routes():
         """Переключает статус избранного для программы"""
         try:
             program_path = get_validated_param('path')
+            # Нормализуем путь перед передачей в toggle_favorite для корректного поиска/сравнения
+            normalized_path = os.path.normpath(program_path)
             
-            success, is_favorite = toggle_favorite(program_path, save_program_list_func)
+            # Передаем нормализованный путь
+            success, is_favorite = toggle_favorite(normalized_path, save_program_list_func)
             
             if success:
                 status = "добавлена в избранное" if is_favorite else "удалена из избранного"
@@ -187,14 +196,18 @@ def register_routes():
         """API для удаления программы из списка"""
         try:
             program_path = get_validated_param('path')
-            
             # Получаем имя файла для сообщения
             program_name = os.path.basename(program_path)
             
-            # Удаляем программу из списка
-            if remove_program(program_path, save_program_list_func):
+            # Явно нормализуем путь перед передачей
+            normalized_path = os.path.normpath(program_path)
+            print(f"--- [DEBUG][web_routes] Нормализованный путь для удаления: {normalized_path} ---")
+            
+            # Используем переименованную функцию с нормализованным путем
+            if remove_program_from_list(normalized_path, save_program_list_func):
                 return Response(f"Программа {program_name} удалена из списка", content_type='text/plain; charset=utf-8')
             else:
+                # Используем исходный program_path для сообщения об ошибке
                 return Response(f"Ошибка: программа не найдена: {program_path}", content_type='text/plain; charset=utf-8')
         except Exception as e:
             return handle_api_error(e, "при удалении программы")
@@ -216,3 +229,43 @@ def register_routes():
             return Response(result, content_type='text/plain; charset=utf-8')
         except Exception as e:
             return handle_api_error(e, "при применении изменений сканирования")
+
+    @app.route('/remove/<int:program_index>', methods=['DELETE', 'GET'])
+    def remove_program(program_index):
+        """Обрабатывает запрос на удаление программы."""
+        print(f"\n--- [DEBUG][web_routes] Запрос на удаление программы с индексом: {program_index} ---")
+        
+        if EXECUTABLE is None:
+            print("--- [DEBUG][web_routes] Ошибка: Список программ (EXECUTABLE) не инициализирован! ---")
+            return jsonify({"status": "error", "message": "Server error: Program list not available"}), 500
+            
+        if save_program_list_func is None:
+            print("--- [DEBUG][web_routes] Ошибка: Функция сохранения (save_program_list_func) не инициализирована! ---")
+            return jsonify({"status": "error", "message": "Server error: Save function not available"}), 500
+
+        try:
+            # Проверяем корректность индекса
+            if 0 <= program_index < len(EXECUTABLE):
+                removed_program = EXECUTABLE.pop(program_index)
+                print(f"--- [DEBUG][web_routes] Программа '{removed_program.name}' удалена из списка (индекс {program_index}) ---")
+                print(f"--- [DEBUG][web_routes] Длина списка ПОСЛЕ удаления: {len(EXECUTABLE)} ---")
+                
+                # Вызываем функцию сохранения, переданную из launcher.py
+                print("--- [DEBUG][web_routes] Вызов функции сохранения (save_program_list_func)... ---")
+                save_success = save_program_list_func() 
+                if save_success:
+                     print("--- [DEBUG][web_routes] Функция сохранения сообщила об успехе ---")
+                     return jsonify({"status": "success", "message": "Program removed"})
+                else:
+                     print("--- [DEBUG][web_routes] Функция сохранения сообщила об ошибке ---")
+                     # Важно: Возможно, стоит вернуть программу обратно в список или обработать ошибку иначе
+                     # EXECUTABLE.insert(program_index, removed_program) # Пример отката
+                     return jsonify({"status": "error", "message": "Failed to save changes"}), 500
+            else:
+                print(f"--- [DEBUG][web_routes] Ошибка: Неверный индекс ({program_index}), длина списка: {len(EXECUTABLE)} ---")
+                abort(404, description="Program index out of bounds") # Используем abort для стандартной ошибки
+                
+        except Exception as e:
+            print(f"--- [DEBUG][web_routes] Исключение при удалении: {e} ---")
+            # В случае непредвиденной ошибки
+            return jsonify({"status": "error", "message": f"An error occurred: {e}"}), 500
