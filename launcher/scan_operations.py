@@ -97,7 +97,6 @@ def get_scan_status():
     if scan_status["running"]:
         # Показываем информацию о прогрессе во время сканирования
         log_lines.append(f"Файлов в списке (до сканирования): {scan_status.get('initial_list_length', 0)}")
-        log_lines.append(f"Выполнено операций (взвешенных): {scan_status.get('current_weighted_done', 0)}")
         log_lines.append(f"Найдено новых программ (пока): {scan_status['new_programs']}")
         log_lines.append(f"Последний этап/файл: {scan_status['last_file']}")
     elif scan_status["end_time"] > 0:
