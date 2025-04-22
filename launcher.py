@@ -23,9 +23,9 @@ EXCLUDED_FILENAMES = ['uninstall.exe', 'setup.exe', 'installer.exe', 'install.ex
 # Путь к директории с шаблонами Flask
 TEMPLATE_PATH = "launcher"
 # Порт, на котором будет запущен веб-сервер
-SERVER_PORT = 8077
+SERVER_PORT = 8100
 # Максимальный порт для поиска (если предыдущие заняты)
-MAX_PORT = 8100
+MAX_PORT = 8200
 
 app = Flask(__name__)
 
