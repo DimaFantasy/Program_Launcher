@@ -529,14 +529,18 @@ def extract_category_from_path(file_path, root_directory):
     Категория - это первая папка с конца в пути к файлу относительно корневой директории.
     Если файл находится в корне, возвращает "найдено".
     """
+    # Очищаем пути от пробелов
+    file_path = file_path.strip() if file_path else ""
+    root_directory = root_directory.strip() if root_directory else ""
+    
     # Получаем относительный путь от корневой директории
     rel_path = os.path.relpath(file_path, root_directory)
     path_parts = rel_path.split(os.sep)
     
     # Если путь содержит более одного элемента (не в корне)
     if len(path_parts) > 1:
-        # Берем первую папку из пути (не считая имени файла)
-        return path_parts[0]
+        # Берем первую папку из пути (не считая имени файла) и очищаем от пробелов
+        return path_parts[0].strip()
     else:
         # Если файл в корне, возвращаем "найдено"
         return "найдено"

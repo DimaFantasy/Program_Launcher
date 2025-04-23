@@ -9,7 +9,8 @@ BASE_DIRECTORY = None
 def set_base_directory(directory):
     """Установка базовой директории для использования в функциях модуля"""
     global BASE_DIRECTORY
-    BASE_DIRECTORY = directory
+    # Убираем пробелы в начале и конце пути, если они есть
+    BASE_DIRECTORY = directory.strip() if directory else None
     print(f"База директория для file_operations установлена: {BASE_DIRECTORY}")
     return BASE_DIRECTORY
 
@@ -23,6 +24,9 @@ def load_program_list(program_class=None, base_directory=None):
     if not base_dir:
         print("Ошибка: не задана базовая директория")
         return [], {}
+    
+    # Убираем пробелы в начале и конце пути, если они есть
+    base_dir = base_dir.strip()
         
     list_path = os.path.join(base_dir, 'list.txt')
     
@@ -52,38 +56,47 @@ def load_program_list(program_class=None, base_directory=None):
                     try:
                         # Определяем тип разделителя для избранного
                         is_favorite = False
+                        
+                        # Ищем разделители с учетом пробелов до и после
+                        # Обрабатываем случаи где может быть любое количество пробелов до и после ||
                         if "||*||" in line:
                             is_favorite = True
-                            path, rest = line.split("||*||", 1)
+                            parts = line.split("||*||", 1)
+                            path = parts[0].strip()
+                            rest = parts[1].strip() if len(parts) > 1 else ""
                         elif "||-||" in line:
-                            path, rest = line.split("||-||", 1)
+                            parts = line.split("||-||", 1)
+                            path = parts[0].strip()
+                            rest = parts[1].strip() if len(parts) > 1 else ""
                         else:
-                            # Старый формат, разделенный ' || '
-                            parts = line.split(' || ')
-                            if len(parts) < 3:
+                            # Поиск стандартного разделителя '||' с учетом пробелов
+                            import re
+                            matches = re.split(r'\s*\|\|\s*', line, 2)  # Разбиваем по || с любым количеством пробелов вокруг
+                            
+                            if len(matches) < 3:
                                 print(f"Предупреждение: строка {line_num} имеет неверный формат: {line}")
                                 continue
-                            path = parts[0].strip()
-                            category = parts[1].strip()
-                            description = ' || '.join(parts[2:]).strip()
+                                
+                            path = matches[0].strip()
+                            category = matches[1].strip()
+                            description = matches[2].strip() if len(matches) > 2 else "Без описания"
                             rest = None
                         
                         # Обрабатываем новый формат (с ||*|| или ||-||)
                         if rest is not None:
-                            rest_parts = rest.split(' || ', 1)
-                            if len(rest_parts) < 2:
-                                print(f"Предупреждение: неверный формат после разделителя в строке {line_num}: {line}")
-                                category = rest_parts[0].strip()
-                                description = "Без описания"
+                            # Разделяем оставшуюся часть по разделителю '||' с учетом пробелов
+                            import re
+                            parts = re.split(r'\s*\|\|\s*', rest, 1)  # Разбиваем по || с любым количеством пробелов
+                            
+                            if len(parts) > 1:
+                                category = parts[0].strip()
+                                description = parts[1].strip()
                             else:
-                                category = rest_parts[0].strip()
-                                description = rest_parts[1].strip()
+                                category = rest.strip()
+                                description = "Без описания"
                         
                         # Восстанавливаем переносы строк в описании
                         description = description.replace('\\n', '\n')
-                        
-                        # Очищаем пути от лишних пробелов
-                        path = path.strip()
                         
                         # Экранируем HTML только в категории
                         category_safe = escape_html(category)
@@ -130,6 +143,9 @@ def save_program_list(programs, base_directory=None):
     if not base_dir:
         print("Ошибка: не задана базовая директория")
         return False
+    
+    # Убираем пробелы в начале и конце пути, если они есть
+    base_dir = base_dir.strip()
         
     list_path = os.path.join(base_dir, 'list.txt')
     
@@ -140,15 +156,15 @@ def save_program_list(programs, base_directory=None):
             for program in programs:
                 # Получаем оригинальные (неэкранированные) значения для сохранения
                 if isinstance(program, dict):
-                    path = program['path']
+                    path = program['path'].strip()
                     # Используем оригинальные значения, если они есть
-                    category = program.get('original_category', program['category'])
+                    category = program.get('original_category', program['category']).strip()
                     description = program.get('original_description', program['description'])
                     is_favorite = program.get('is_favorite', False)
                 else:
-                    path = program.path
+                    path = program.path.strip()
                     # Используем оригинальные значения, если они есть
-                    category = getattr(program, 'original_category', program.category)
+                    category = getattr(program, 'original_category', program.category).strip()
                     description = getattr(program, 'original_description', program.description)
                     is_favorite = getattr(program, 'is_favorite', False)
                 
@@ -156,11 +172,19 @@ def save_program_list(programs, base_directory=None):
                 category = unescape_html(category)
                 description = unescape_html(description)
                 
+                # Убираем лишние пробелы в начале и конце важных полей
+                category = category.strip()
+                # Не обрезаем description.strip() полностью, так как могут быть намеренные пробелы внутри
+                # Но убираем пробелы в начале
+                description = description.lstrip()
+                
                 # Используем новый формат маркировки избранного
                 favorite_mark = "||*||" if is_favorite else "||-||"
                 # Корректное экранирование переносов строк для записи в файл
                 escaped_description = description.replace('\r', '').replace('\n', '\\n') 
-                f.write(f"{path} {favorite_mark} {category} || {escaped_description}\n")
+                
+                # Используем точный формат без лишних пробелов: path||*||category||description
+                f.write(f"{path}{favorite_mark}{category}||{escaped_description}\n")
         
         print(f"Список программ успешно сохранен в {list_path}")
         return True
@@ -183,6 +207,11 @@ def rename_category(programs, old_category, new_category, base_directory):
     """
     changed_count = 0
     
+    # Убираем пробелы в начале и конце
+    old_category = old_category.strip() if old_category else ""
+    new_category = new_category.strip() if new_category else ""
+    base_directory = base_directory.strip() if base_directory else ""
+    
     # Экранируем HTML в новой категории
     new_category_safe = escape_html(new_category)
     
@@ -198,7 +227,7 @@ def rename_category(programs, old_category, new_category, base_directory):
             original_category = unescape_html(program.category)
             
             # Если категория совпадает, изменяем ее
-            if original_category == old_category:
+            if original_category.strip() == old_category:
                 # Обновляем категорию в объекте программы (и экранированную, и оригинальную)
                 program.category = new_category_safe
                 program.original_category = new_category
@@ -240,6 +269,11 @@ def change_file_category(programs, program_path, new_category, base_directory):
     Returns:
         tuple: (успех операции, обновленный список программ)
     """
+    # Убираем пробелы в начале и конце
+    program_path = program_path.strip() if program_path else ""
+    new_category = new_category.strip() if new_category else ""
+    base_directory = base_directory.strip() if base_directory else ""
+    
     # Экранируем HTML в новой категории
     new_category_safe = escape_html(new_category)
     
@@ -256,7 +290,10 @@ def change_file_category(programs, program_path, new_category, base_directory):
         print(f"Всего программ в списке: {len(programs)}")
         
         for program in programs:
-            if program.path == program_path:
+            # Очищаем путь программы от пробелов для корректного сравнения
+            clean_program_path = program.path.strip()
+            
+            if clean_program_path == program_path:
                 print(f"Найдена программа: {program.path}")
                 # Обновляем категорию в объекте программы
                 program.category = new_category_safe

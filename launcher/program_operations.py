@@ -45,8 +45,14 @@ class ProgramInfo:
 
 def toggle_favorite(program_path, save_program_list_func):
     """Переключает статус избранного для программы"""
+    # Очищаем путь от пробелов
+    program_path = program_path.strip() if program_path else ""
+    
     for program in EXECUTABLE:
-        if program.path == program_path:
+        # Очищаем путь программы от пробелов для корректного сравнения
+        clean_program_path = program.path.strip()
+        
+        if clean_program_path == program_path:
             program.is_favorite = not program.is_favorite
             save_program_list_func()
             return True, program.is_favorite
@@ -54,8 +60,14 @@ def toggle_favorite(program_path, save_program_list_func):
 
 def change_description(program_path, new_description, save_program_list_func):
     """Изменяет описание программы"""
+    # Очищаем путь от пробелов
+    program_path = program_path.strip() if program_path else ""
+    
     for program in EXECUTABLE:
-        if program.path == program_path:
+        # Очищаем путь программы от пробелов для корректного сравнения
+        clean_program_path = program.path.strip()
+        
+        if clean_program_path == program_path:
             # Сохраняем оригинальное описание (неэкранированное)
             if hasattr(program, 'original_description'):
                 program.original_description = new_description
@@ -71,6 +83,9 @@ def remove_program(program_path_to_remove, save_func):
     print("--- Удаление программы ---")
     print(f"Получен путь для удаления: {program_path_to_remove}")
     
+    # Очищаем путь от пробелов перед обработкой
+    program_path_to_remove = program_path_to_remove.strip() if program_path_to_remove else ""
+    
     # Нормализуем входной путь (например, к формату ОС)
     normalized_path_to_remove = os.path.normpath(program_path_to_remove)
     print(f"Нормализованный путь для удаления (входной): {normalized_path_to_remove}")
@@ -81,8 +96,10 @@ def remove_program(program_path_to_remove, save_func):
     index_to_remove = -1 # Индекс для удаления
     
     for i, program in enumerate(EXECUTABLE):
+        # Очищаем путь программы от пробелов перед нормализацией
+        clean_program_path = program.path.strip() if program.path else ""
         # Нормализуем путь из списка перед сравнением
-        normalized_program_path_in_list = os.path.normpath(program.path) 
+        normalized_program_path_in_list = os.path.normpath(clean_program_path) 
         
         # print(f"Сравнение '{normalized_path_to_remove}' с '{normalized_program_path_in_list}' (из {program.path})")
         
@@ -107,7 +124,7 @@ def remove_program(program_path_to_remove, save_func):
         # Вывод текущих путей для отладки
         print("Текущие пути в списке EXECUTABLE:")
         for p in EXECUTABLE:
-            print(f"  - {p.path} (нормализованный: {os.path.normpath(p.path)})")
+            print(f"  - {p.path} (нормализованный: {os.path.normpath(p.path.strip() if p.path else '')})")
         print("--- Завершение удаления (не найдено) ---")
         return False # Возвращаем False, если программа не найдена
 
@@ -115,30 +132,64 @@ def remove_category(category_to_remove, save_func):
     """Удаляет все программы из указанной категории"""
     global EXECUTABLE
     
+    # Очищаем категорию от пробелов
+    category_to_remove = category_to_remove.strip() if category_to_remove else ""
+    
     # Не разрешаем удалять категорию "Избранное"
     if category_to_remove.lower() == "избранное":
         print(f"Попытка удаления защищенной категории 'Избранное'")
         return False, "Категория 'Избранное' не может быть удалена"
     
-    print(f"Удаление всех программ в категории: {category_to_remove}")
+    print(f"Удаление всех программ в категории: '{category_to_remove}'")
     initial_count = len(EXECUTABLE)
     
     # Создаем новый список для программ, которые не входят в удаляемую категорию
     programs_to_keep = []
+    programs_to_remove = []
     
+    # Сначала собираем все категории и логируем их для отладки
+    all_categories = set()
     for prog in EXECUTABLE:
-        # Получаем оригинальную категорию без экранирования HTML
         original_category = getattr(prog, 'original_category', prog.category)
         if hasattr(prog, 'original_category'):
-            # Если есть оригинальная категория, используем её
-            if original_category != category_to_remove:
-                programs_to_keep.append(prog)
+            clean_category = original_category.strip() if original_category else ""
+            all_categories.add(clean_category)
         else:
             # Для совместимости - может быть у некоторых программ нет original_category
             from html_utils import unescape_html
             unescaped_category = unescape_html(prog.category)
-            if unescaped_category != category_to_remove:
-                programs_to_keep.append(prog)
+            clean_category = unescaped_category.strip() if unescaped_category else ""
+            all_categories.add(clean_category)
+    
+    print(f"Найденные категории в списке: {', '.join(all_categories)}")
+    
+    # Перебираем все программы и проверяем их категории
+    for prog in EXECUTABLE:
+        # Получаем оригинальную категорию без экранирования HTML
+        original_category = getattr(prog, 'original_category', prog.category)
+        
+        # Определяем чистую категорию для сравнения
+        if hasattr(prog, 'original_category'):
+            # Если есть оригинальная категория, используем её и очищаем от пробелов
+            clean_category = original_category.strip().lower() if original_category else ""
+        else:
+            # Для совместимости - может быть у некоторых программ нет original_category
+            from html_utils import unescape_html
+            unescaped_category = unescape_html(prog.category)
+            # Очищаем от пробелов и приводим к нижнему регистру для регистронезависимого сравнения
+            clean_category = unescaped_category.strip().lower() if unescaped_category else ""
+        
+        # Сравниваем категории (приводим к нижнему регистру для регистронезависимого сравнения)
+        if clean_category == category_to_remove.lower():
+            programs_to_remove.append(prog.path)  # Сохраняем путь для логирования
+        else:
+            programs_to_keep.append(prog)
+    
+    # Логируем найденные программы для удаления
+    if programs_to_remove:
+        print(f"Программы для удаления из категории '{category_to_remove}':")
+        for path in programs_to_remove:
+            print(f"  - {path}")
     
     # Заменяем глобальный список на отфильтрованный
     EXECUTABLE.clear()
@@ -153,11 +204,15 @@ def remove_category(category_to_remove, save_func):
         print(f"Результат сохранения: {result}")
         return result, f"Удалено {removed_count} программ из категории '{category_to_remove}'"
     else:
+        print(f"Не найдено программ в категории '{category_to_remove}' для удаления")
         return False, f"Программы в категории '{category_to_remove}' не найдены"
 
 def move_favorites_to_category(new_category, save_func):
     """Перемещает все избранные программы в указанную категорию"""
     global EXECUTABLE
+    
+    # Очищаем категорию от пробелов
+    new_category = new_category.strip() if new_category else ""
     
     # Экранируем HTML в новой категории
     from html_utils import escape_html
