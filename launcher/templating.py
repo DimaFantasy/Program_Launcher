@@ -81,13 +81,23 @@ class TemplateEngine:
             program_card_template = self.load_template('program_card.html')
             category_template = self.load_template('category.html')
             nav_item_template = self.load_template('nav_item.html')
-            javascript_template = self.load_template('script.js')
             
-            if not all([main_template, program_card_template, category_template, nav_item_template, javascript_template]):
+            # Загружаем CSS и JavaScript из поддиректорий
+            css_template = self.load_template('css/style.css')
+            javascript_template = self.load_template('js/script.js')
+            
+            if not all([main_template, program_card_template, category_template, nav_item_template, css_template, javascript_template]):
                 return "<h1>Ошибка: один или несколько шаблонов не найдены</h1>"
             
             # Заменяем название приложения
             main_template = main_template.replace('Programs-2k10 Launcher', app_name)
+            
+            # Встраиваем CSS и JavaScript в HTML
+            css_style_tag = f'<style>\n{css_template}\n</style>'
+            javascript_tag = f'<script>\n{javascript_template}\n</script>'
+            
+            main_template = main_template.replace('<!-- CSS_PLACEHOLDER -->', css_style_tag)
+            main_template = main_template.replace('<!-- JAVASCRIPT_PLACEHOLDER -->', javascript_tag)
             
             # Группируем программы по категориям
             grouped_programs = {}
@@ -164,7 +174,8 @@ class TemplateEngine:
                     category_icon='<i class="bi bi-star-fill"></i>',
                     category_name="Избранное",
                     category_id_original="Избранное",
-                    rename_button=""  # Пустая строка вместо кнопки
+                    rename_button="",  # Пустая строка вместо кнопки
+                    delete_category_button=f'<button class="btn btn-sm btn-danger clear-favorites-btn" title="Удалить все программы из избранного в списке List.txt"><i class="bi bi-trash"></i> Удалить из списка List.txt</button>'
                 )
                 favorites_category = favorites_category.replace("<!-- EXECUTABLE_PLACEHOLDER -->", "\n".join(favorite_programs_html))
                 content_categories.append(favorites_category)
@@ -202,13 +213,19 @@ class TemplateEngine:
                 # Добавляем кнопку переименования для обычных категорий
                 rename_button = f'<button class="btn btn-sm btn-outline-light rename-category-btn" data-category="{escape(category)}" title="Переименовать категорию"><i class="bi bi-pencil"></i> Переименовать</button>'
                 
+                # Добавляем кнопку удаления категории, но не для категории "Избранное"
+                delete_category_button = ""
+                if category.lower() != "избранное":
+                    delete_category_button = f'<button class="btn btn-sm btn-danger delete-category-btn ms-2" data-category="{escape(category)}" title="Удалить категорию из списка List.txt"><i class="bi bi-trash"></i> Удалить списка List.txt</button>'
+                
                 category_html = self.render_template(category_template,
                     category_id=category_id,
                     category_header_class="",
                     category_icon=category_icons.get(category.lower(), self.default_icon),
                     category_name=escape(category),
                     category_id_original=escape(category),
-                    rename_button=rename_button
+                    rename_button=rename_button,
+                    delete_category_button=delete_category_button
                 )
                 category_html = category_html.replace("<!-- EXECUTABLE_PLACEHOLDER -->", "\n".join(programs_html))
                 content_categories.append(category_html)
@@ -217,10 +234,6 @@ class TemplateEngine:
             main_template = main_template.replace('<!-- CATEGORY_NAV_PLACEHOLDER -->', '\n'.join(category_nav_items))
             main_template = main_template.replace('<!-- CONTENT_PLACEHOLDER -->', '\n'.join(content_categories))
             main_template = main_template.replace('<!-- CATEGORY_SELECT_PLACEHOLDER -->', '\n'.join(category_select_items))
-            
-            # Добавляем JavaScript-код как шаблон
-            javascript_code = f'<script>\n{javascript_template}\n</script>'
-            main_template = main_template.replace('<!-- JAVASCRIPT_PLACEHOLDER -->', javascript_code)
             
             return main_template
         

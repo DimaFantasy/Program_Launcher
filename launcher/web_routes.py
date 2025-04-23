@@ -35,6 +35,7 @@ def register_routes():
     """Регистрирует все маршруты API"""
     # Импортируем зависимости, переименовывая remove_program для избежания конфликта
     from program_operations import toggle_favorite, change_description, remove_program as remove_program_from_list
+    from program_operations import remove_category as remove_category_from_list, clear_favorites as clear_favorites_list
     from scan_operations import start_scan_in_thread, get_scan_status
     from program_launcher import launch_program, handle_open_folder
     
@@ -269,3 +270,35 @@ def register_routes():
             print(f"--- [DEBUG][web_routes] Исключение при удалении: {e} ---")
             # В случае непредвиденной ошибки
             return jsonify({"status": "error", "message": f"An error occurred: {e}"}), 500
+
+    @app.route('/remove_category')
+    def api_remove_category():
+        """Удаляет все программы из указанной категории"""
+        try:
+            category = get_validated_param('category')
+            
+            # Проверка проводится внутри remove_category_from_list
+            success, message = remove_category_from_list(category, save_program_list_func)
+            
+            if success:
+                # Перезагружаем список программ ПОСЛЕ удаления и сохранения
+                # Этот шаг может быть необязательным, так как EXECUTABLE уже изменен
+                # load_program_list_func()
+                return Response(message, content_type='text/plain; charset=utf-8')
+            else:
+                return Response(f"Ошибка: {message}", content_type='text/plain; charset=utf-8')
+        except Exception as e:
+            return handle_api_error(e, "при удалении категории")
+
+    @app.route('/clear_favorites')
+    def api_clear_favorites():
+        """Удаляет все программы из избранного"""
+        try:
+            success, message = clear_favorites_list(save_program_list_func)
+            
+            if success:
+                return Response(message, content_type='text/plain; charset=utf-8')
+            else:
+                return Response(f"Информация: {message}", content_type='text/plain; charset=utf-8')
+        except Exception as e:
+            return handle_api_error(e, "при очистке избранного")

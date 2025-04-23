@@ -673,6 +673,122 @@ function showDescriptionModal(path, event) {
     modal.show();
 }
 
+// Функция для инициализации переключателя темы
+function initThemeSwitcher() {
+    const themeSwitcher = document.getElementById('themeSwitcher');
+    
+    // Проверяем, есть ли сохраненная тема в localStorage
+    const savedTheme = localStorage.getItem('theme');
+    
+    // Если есть сохраненная темная тема или предпочтения системы - тёмные
+    if (savedTheme === 'dark' || 
+        (savedTheme === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        // Включаем темную тему
+        document.body.classList.add('dark-theme');
+        themeSwitcher.checked = true;
+    }
+    
+    // Обработчик события переключения
+    themeSwitcher.addEventListener('change', function() {
+        if (this.checked) {
+            // Включаем темную тему
+            document.body.classList.add('dark-theme');
+            localStorage.setItem('theme', 'dark');
+            console.log('Переключение на темную тему');
+        } else {
+            // Включаем светлую тему
+            document.body.classList.remove('dark-theme');
+            localStorage.setItem('theme', 'light');
+            console.log('Переключение на светлую тему');
+        }
+    });
+}
+
+// Функция для отображения модального окна переименования категории
+function showRenameCategoryModal(categoryName) {
+    // Заполняем скрытое поле с оригинальным именем категории
+    document.getElementById("originalCategoryName").value = categoryName;
+    
+    // Устанавливаем текущее название категории в поле ввода
+    document.getElementById("newCategoryName").value = categoryName;
+    
+    // Показываем модальное окно
+    const modal = new bootstrap.Modal(document.getElementById("renameCategoryModal"));
+    modal.show();
+}
+
+// Функция для удаления категории
+function deleteCategory(categoryName) {
+    // Проверяем, не избранное ли это
+    if (categoryName.toLowerCase() === "избранное") {
+        showToast("Ошибка", "Категория 'Избранное' не может быть удалена", "danger");
+        return;
+    }
+    
+    if (!confirm(`Вы уверены, что хотите удалить категорию "${categoryName}" и все программы в ней?`)) {
+        return;
+    }
+    
+    console.log(`Отправка запроса на удаление категории: ${categoryName}`);
+    
+    // Показываем индикатор загрузки в виде Toast
+    showToast("Информация", "Удаление категории...", "info");
+    
+    // Отправляем запрос на сервер
+    fetch(`/remove_category?category=${encodeURIComponent(categoryName)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Сервер вернул ${response.status}: ${response.statusText}`);
+            }
+            return response.text();
+        })
+        .then(data => {
+            console.log("Ответ сервера:", data);
+            showToast("Категория удалена", data);
+            // Перезагружаем страницу
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        })
+        .catch(error => {
+            console.error("Ошибка при удалении категории:", error);
+            showToast("Ошибка", "Не удалось удалить категорию: " + error, "danger");
+        });
+}
+
+// Функция для очистки всех избранных элементов
+function clearAllFavorites() {
+    if (!confirm("Вы уверены, что хотите удалить из списка все программы, находящиеся в избранном?")) {
+        return;
+    }
+    
+    console.log("Отправка запроса на удаление всех избранных программ");
+    
+    // Показываем индикатор загрузки в виде Toast
+    showToast("Информация", "Удаление программ из избранного...", "info");
+    
+    // Отправляем запрос на сервер
+    fetch('/clear_favorites')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Сервер вернул ${response.status}: ${response.statusText}`);
+            }
+            return response.text();
+        })
+        .then(data => {
+            console.log("Ответ сервера:", data);
+            showToast("Программы удалены", data);
+            // Перезагружаем страницу
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        })
+        .catch(error => {
+            console.error("Ошибка при удалении программ:", error);
+            showToast("Ошибка", "Не удалось удалить программы: " + error, "danger");
+        });
+}
+
 // Обработчики событий DOM
 document.addEventListener("DOMContentLoaded", function() {
     // Инициализация ScrollSpy
@@ -683,12 +799,34 @@ document.addEventListener("DOMContentLoaded", function() {
     // Создаем контейнер для toast-уведомлений
     createToastContainer();
     
+    // Инициализация переключателя темы
+    initThemeSwitcher();
+    
     // Обработчик для кнопок переименования категории
     document.querySelectorAll(".rename-category-btn").forEach(button => {
         button.addEventListener("click", function(event) {
             event.preventDefault();
             const categoryName = this.getAttribute("data-category");
             showRenameCategoryModal(categoryName);
+        });
+    });
+    
+    // Обработчик для кнопок удаления категории
+    document.querySelectorAll(".delete-category-btn").forEach(button => {
+        button.addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const categoryName = this.getAttribute("data-category");
+            deleteCategory(categoryName);
+        });
+    });
+
+    // Обработчик для кнопки очистки избранного
+    document.querySelectorAll(".clear-favorites-btn").forEach(button => {
+        button.addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            clearAllFavorites();
         });
     });
     
@@ -894,16 +1032,3 @@ document.addEventListener("DOMContentLoaded", function() {
             });
     });
 });
-
-// Функция для отображения модального окна переименования категории
-function showRenameCategoryModal(categoryName) {
-    // Заполняем скрытое поле с оригинальным именем категории
-    document.getElementById("originalCategoryName").value = categoryName;
-    
-    // Устанавливаем текущее название категории в поле ввода
-    document.getElementById("newCategoryName").value = categoryName;
-    
-    // Показываем модальное окно
-    const modal = new bootstrap.Modal(document.getElementById("renameCategoryModal"));
-    modal.show();
-}

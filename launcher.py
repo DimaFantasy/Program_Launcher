@@ -11,13 +11,13 @@ APPLICATION_NAME = "USB Bootable Tools Launcher v2"
 
 # Настройки сканирования
 # Расширения файлов, которые считаются исполняемыми
-EXECUTABLE_EXTENSIONS = ['.exe', '.bat', '.cmd', '.msi', '.com', '.app', '.py', '.ps1', '.jar']
+EXECUTABLE_EXTENSIONS = ['.exe', '.bat', '.cmd', '.msi', '.com', '.app', '.py', '.ps1', '.jar', '.reg']
 # Расширения файлов, которые следует игнорировать при сканировании
 IGNORE_EXTENSIONS = ['.dll', '.ini', '.txt', '.dat', '.db', '.log', '.sys']
 # Директории, которые следует исключить из сканирования
-EXCLUDED_DIRS = ['__pycache__', 'venv', '.git', '.vscode', 'node_modules', 'tmp']
+EXCLUDED_DIRS = ['launcher','__pycache__', 'venv', '.git', '.vscode', 'node_modules', 'tmp']
 # Имена файлов, которые следует исключить из сканирования
-EXCLUDED_FILENAMES = ['uninstall.exe', 'setup.exe', 'installer.exe', 'install.exe', 'updater.exe']
+EXCLUDED_FILENAMES = ['uninstall.exe']
 
 # Серверные настройки
 # Путь к директории с шаблонами Flask

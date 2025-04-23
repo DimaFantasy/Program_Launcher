@@ -1,0 +1,219 @@
+/* Основные стили сайта */
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; padding-top: 60px; }
+.navbar { background-color: #343a40; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+.navbar-brand { font-weight: 600; color: #fff; }
+.card { transition: transform 0.2s; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+.card-title { font-weight: 600; color: #343a40; }
+.card-text { color: #6c757d; font-size: 0.9rem; }
+.program-path { font-size: 0.8rem; color: #6c757d; font-family: monospace; }
+
+/* Стили для переключателя темы */
+.theme-switcher {
+    display: flex;
+    align-items: center;
+}
+
+.form-check-input {
+    cursor: pointer;
+    width: 3em;
+    height: 1.5em;
+}
+
+.theme-icon-dark, .theme-icon-light {
+    margin-left: 5px;
+}
+
+.theme-icon-light {
+    display: none;
+    color: #ffc107;
+}
+
+/* Стили темной темы */
+body.dark-theme {
+    background-color: #1e2124;
+    color: #e9ecef;
+}
+
+body.dark-theme .card {
+    background-color: #2c3034;
+    border-color: #444;
+}
+
+body.dark-theme .card-title {
+    color: #e9ecef;
+}
+
+body.dark-theme .card-text,
+body.dark-theme .program-path {
+    color: #adb5bd;
+}
+
+body.dark-theme #category-nav {
+    background-color: #2c3034;
+}
+
+body.dark-theme .nav-category-item {
+    color: #adb5bd;
+}
+
+body.dark-theme .nav-category-item:hover {
+    background-color: #343a40;
+}
+
+body.dark-theme .modal-content {
+    background-color: #2c3034;
+    color: #e9ecef;
+}
+
+body.dark-theme .modal-content .modal-body,
+body.dark-theme .modal-content .modal-footer {
+    border-color: #444;
+}
+
+body.dark-theme .form-control,
+body.dark-theme .form-select {
+    background-color: #343a40;
+    border-color: #444;
+    color: #e9ecef;
+}
+
+body.dark-theme .alert-light {
+    background-color: #343a40;
+    color: #e9ecef;
+    border-color: #444;
+}
+
+/* При включенной темной теме меняем иконки */
+body.dark-theme .theme-icon-dark {
+    display: none;
+}
+
+body.dark-theme .theme-icon-light {
+    display: inline-block;
+}
+
+/* Стили для заголовков категорий */
+.category-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin: 20px 0 15px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.category-header {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.rename-category-btn {
+    color: white;
+    border-color: rgba(255, 255, 255, 0.5);
+    margin-left: 10px;
+    transition: all 0.3s ease;
+}
+
+.rename-category-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: white;
+    color: white;
+}
+
+/* Особый стиль для категории избранного */
+.favorites-category {
+    background-color: #ffc107 !important;
+    color: #343a40 !important;
+}
+
+.favorites-category .rename-category-btn {
+    color: #343a40;
+    border-color: rgba(0, 0, 0, 0.3);
+}
+
+.favorites-category .rename-category-btn:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-color: #343a40;
+}
+
+/* Улучшенные стили для навигации с категориями */
+#category-nav { 
+    top: 56px; 
+    z-index: 1000; 
+    background-color: #f8f9fa; 
+    padding: 10px 0; 
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.nav-category-item {
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    transition: all 0.2s ease;
+    color: #495057;
+}
+
+.nav-category-item:hover {
+    background-color: #e9ecef;
+    color: #007bff;
+}
+
+.nav-pills .nav-link.active.nav-category-item {
+    background-color: #007bff;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.nav-pills .nav-link.active.nav-category-item .badge.bg-secondary {
+    background-color: white !important;
+    color: #007bff !important;
+}
+
+.nav-pills .nav-link.active.nav-category-item .badge.bg-warning {
+    background-color: white !important;
+    color: #ffc107 !important;
+}
+
+.category-name {
+    font-weight: 500;
+}
+
+.nav-scroll-container { 
+    max-height: calc(100vh - 120px); 
+    overflow-y: auto; 
+    overflow-x: hidden; 
+    scrollbar-width: thin;
+    padding: 0 10px;
+}
+
+.badge {
+    font-size: 0.7rem; 
+    padding: 0.35em 0.65em;
+    font-weight: 600;
+}
+
+.category-icon { margin-right: 10px; }
+.btn-launch { background-color: #28a745; border-color: #28a745; }
+.btn-launch:hover { background-color: #218838; border-color: #1e7e34; }
+.btn-folder { background-color: #6c757d; border-color: #6c757d; }
+.btn-folder:hover { background-color: #5a6268; border-color: #545b62; }
+.btn-actions { display: flex; gap: 8px; }
+.nav-pills .nav-link { color: #495057; padding: 0.5rem 1rem; font-size: 0.9rem; }
+.nav-pills .nav-link.active { background-color: #007bff; color: white; }
+.sticky-top { position: sticky; top: 56px; z-index: 1000; }
+.navbar-search { width: 300px; }
+.nav-scroll-container::-webkit-scrollbar { width: 6px; }
+.nav-scroll-container::-webkit-scrollbar-thumb { background-color: #bdbdbd; border-radius: 3px; }
+.nav-scroll-container::-webkit-scrollbar-track { background-color: #f0f0f0; }
+.badge { font-size: 0.6rem; vertical-align: text-top; }
+.btn-favorite { color: #aaa; background: none; border: none; padding: 3px; position: absolute; top: 5px; right: 35px; }
+.btn-favorite:hover { color: #ffc107; }
+.btn-favorite.active { color: #ffc107; }
+.btn-remove { color: #aaa; background: none; border: none; padding: 3px; position: absolute; top: 5px; right: 5px; }
+.btn-remove:hover { color: #dc3545; }

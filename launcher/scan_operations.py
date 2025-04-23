@@ -86,7 +86,7 @@ def get_scan_status():
         if scan_status['last_file']:
              status_message += f" ({scan_status['last_file']})"
     else:
-        if scan_status["end_time"] > 0:
+        if (scan_status["end_time"] > 0):
             duration = scan_status["end_time"] - scan_status["start_time"]
             status_message = f"Сканирование завершено за {duration:.1f} сек"
         else:
@@ -219,9 +219,45 @@ def scan_process(save_program_list_func):
         scan_status["log"].append(f"Обнаружено отсутствующих файлов (в списке): {missing_files_count}")
 
         # --- Финальная статистика ---
-        list_length_after_scan = len(EXECUTABLE) # L_after
+        # Правильно рассчитываем количество файлов после сканирования:
+        # Текущее количество существующих файлов + добавленные новые
+        list_length_after_scan = existing_files_before_scan + new_programs_count
 
-        # Выводим информацию в нужном формате в консоль
+        # Обновляем статистику для отображения в логе и на веб-странице
+        scan_status["total_found_files"] = total_found # F_disk
+        scan_status["initial_list_length"] = initial_list_length # L_before
+        scan_status["existing_before_scan"] = existing_files_before_scan # E_before
+        scan_status["missing_after_scan"] = missing_files_count # M_after
+        scan_status["new_programs_added"] = new_programs_count # N_new
+        scan_status["final_list_length"] = list_length_after_scan # L_after
+
+        # Убираем старые/ненужные ключи, если они есть
+        scan_status.pop("total_in_list", None)
+        scan_status.pop("total_all_in_list", None)
+
+        # Формируем содержательный лог о результатах сканирования
+        duration = time.time() - scan_status["start_time"]
+        
+        # Обновляем лог с информацией о результатах в логичном порядке
+        # Важно: эти сообщения уже добавлены ранее в процессе - не дублируем их
+        # scan_status["log"].append(f"Запуск сканирования...")
+        # scan_status["log"].append(f"Файлов в списке: {initial_list_length}")
+        # scan_status["log"].append(f"Существующих файлов в списке: {existing_files_before_scan}")
+        # scan_status["log"].append(f"Найдено исполняемых файлов на диске: {total_found}")
+        # scan_status["log"].append(f"Добавлено новых файлов в список: {new_programs_count}")
+        
+        # Завершающие итоги (в отдельном блоке в конце лога)
+        scan_status["log"].append("--- Итоги сканирования ---")
+        scan_status["log"].append(f"Найдено файлов на диске: {total_found}")
+        scan_status["log"].append(f"Всего в списке файлов после сканирования: {list_length_after_scan}")
+        if missing_files_count > 0:
+            scan_status["log"].append(f"Обнаружено отсутствующих файлов: {missing_files_count}")
+            scan_status["log"].append(f"Для удаления отсутствующих файлов нажмите кнопку 'Сохранить'")
+        
+        # Сообщение о завершении сканирования (всегда в конце)
+        scan_status["log"].append(f"Сканирование завершено за {duration:.1f} сек.")
+
+        # Выводим информацию в нужном формате в консоль для отладки
         print("\n----------------")
         print(f"Найдено файлов на диске: {total_found}")
         print(f"Файлов в списке (до сканирования): {initial_list_length}")
@@ -230,9 +266,10 @@ def scan_process(save_program_list_func):
         print(f"Добавлено новых файлов в список: {new_programs_count}")
         print(f"Всего в списке файлов (после сканирования): {list_length_after_scan}")
         if missing_files_count > 0:
-             print(f"Обнаружено {missing_files_count} отсутствующих файлов. Нажмите 'Сохранить', чтобы удалить их из списка.")
+            print(f"Обнаружено {missing_files_count} отсутствующих файлов. Нажмите 'Сохранить', чтобы удалить их из списка.")
         else:
-             print("Отсутствующие файлы not обнаружены.")
+            print("Отсутствующие файлы не обнаружены.")
+        print(f"Время выполнения: {duration:.1f} сек.")
         print("----------------\n")
 
         # Обновляем статистику для отображения на веб-странице
@@ -246,14 +283,6 @@ def scan_process(save_program_list_func):
         # Убираем старые/ненужные ключи,  if они есть
         scan_status.pop("total_in_list", None)
         scan_status.pop("total_all_in_list", None)
-
-        # Завершение сканирования
-        duration = time.time() - scan_status["start_time"]
-        scan_status["log"].append(f"Сканирование завершено за {duration:.1f} сек.")
-        if missing_files_count > 0:
-             scan_status["log"].append(f"Обнаружено {missing_files_count} отсутствующих файлов. Нажмите 'Сохранить', чтобы удалить их из списка.")
-        else:
-             scan_status["log"].append("Отсутствующие файлы not обнаружены.")
 
         # Формируем сообщение для return (не используется напрямую в UI логе)
         result_message = (
@@ -307,8 +336,8 @@ def find_executable_files():
         for entry in os.scandir(BASE_DIRECTORY):
             if entry.is_dir():
                 # Рекурсивно обходим поддиректории
-                # Пропускаем исключенные директории и 'launcher'
-                if entry.name in _excluded_dirs or entry.name == 'launcher':
+                # Пропускаем исключенные директории, но НЕ исключаем launcher безусловно
+                if entry.name in _excluded_dirs:
                     continue
                 # Рекурсивный вызов для поддиректорий
                 sub_programs, sub_walked = _scan_directory_recursive(entry.path)

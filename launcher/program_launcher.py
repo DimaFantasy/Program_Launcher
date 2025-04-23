@@ -206,11 +206,38 @@ def activate_window(full_path):
         attempt = 0
         hwnd = None
         
+        # Программа уже должна быть запущена в launch_program, не запускаем её снова
+        
         while attempt < max_attempts and hwnd is None:
             time.sleep(0.7)  # Увеличиваем интервал ожидания для тяжелых программ
             def enum_windows_callback(h, windows):
-                if win32gui.IsWindowVisible(h) and program_name.lower() in win32gui.GetWindowText(h).lower():
+                # Проверяем несколько условий для нахождения окна
+                if not win32gui.IsWindowVisible(h):
+                    return
+                
+                window_text = win32gui.GetWindowText(h).lower()
+                
+                # 1. Проверка по имени программы
+                if program_name.lower() in window_text:
                     windows.append(h)
+                    return
+                
+                # 2. Проверка по процессам с похожим именем
+                try:
+                    # Получаем ID процесса для текущего окна
+                    _, found_pid = win32process.GetWindowThreadProcessId(h)
+                    
+                    # Проверяем, что окно принадлежит процессу с похожим именем
+                    try:
+                        import psutil
+                        process = psutil.Process(found_pid)
+                        if program_name.lower() in process.name().lower():
+                            windows.append(h)
+                            return
+                    except (ImportError, psutil.NoSuchProcess, psutil.AccessDenied):
+                        pass
+                except:
+                    pass
             
             windows = []
             win32gui.EnumWindows(enum_windows_callback, windows)
@@ -231,7 +258,7 @@ def activate_window(full_path):
                         # Если не удалось, используем стандартные методы
                         raise
                 else:
-                    # Если pywinauto недоступен, сразу переходим к стандартным методам
+                    # Если pywинаuto недоступен, сразу переходим к стандартным методам
                     raise ImportError("pywinauto not available")
                     
             except Exception:
@@ -254,3 +281,19 @@ def activate_window(full_path):
             print(f"Could not find window for {program_name} after {max_attempts} attempts")
     except Exception as e:
         print(f"Ошибка при активации окна: {str(e)}")
+
+def _get_child_pids(parent_pid):
+    """Получает список ID дочерних процессов для указанного родительского процесса"""
+    try:
+        import psutil
+        children = []
+        try:
+            parent = psutil.Process(parent_pid)
+            children = parent.children(recursive=True)
+            return [child.pid for child in children]
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            return []
+    except ImportError:
+        # Если psutil не установлен, возвращаем пустой список
+        print("psutil не установлен, невозможно получить список дочерних процессов")
+        return []
