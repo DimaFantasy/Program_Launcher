@@ -57,14 +57,33 @@ def launch_program(program_path, base_directory=None):
             print(result)
             return Response(result, content_type='text/plain; charset=utf-8')
         
-        # Use shell=True with proper quoting for Windows
-        command = f'"{full_path}"'
-        process = subprocess.Popen(command, shell=True)
+        # Определяем расширение файла
+        file_extension = os.path.splitext(full_path)[1].lower()
+        
+        # Получаем директорию файла
+        file_directory = os.path.dirname(full_path)
+        
+        # Особая обработка для cmd и bat файлов
+        if file_extension in ['.cmd', '.bat']:
+            # Переходим в директорию файла и запускаем его с правильным путем
+            # Используем команду cd, чтобы перейти в директорию файла перед запуском
+            filename = os.path.basename(full_path)
+            command = f'cmd /c "cd /d "{file_directory}" && {filename}"'
+            use_shell = True
+        else:
+            # Для остальных типов файлов используем стандартный подход
+            command = f'"{full_path}"'
+            use_shell = True
+        
+        process = subprocess.Popen(command, shell=use_shell)
         result = f"Запущена программа: {os.path.basename(program_path)}"
         print(result)
         
         # Bring the launched program to the foreground
-        activate_window(full_path)
+        # Для cmd и bat файлов не пытаемся активировать окно, 
+        # так как они запускаются в командной строке
+        if file_extension not in ['.cmd', '.bat']:
+            activate_window(full_path)
         
         return Response(result, content_type='text/plain; charset=utf-8')
     

@@ -8,6 +8,40 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 .card-text { color: #6c757d; font-size: 0.9rem; }
 .program-path { font-size: 0.8rem; color: #6c757d; font-family: monospace; }
 
+/* Стили для строки поиска - фиксированные для обеих тем */
+.navbar-search {
+    width: 300px;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 255, 255, 0.95) !important; /* Фиксированный светлый фон */
+    color: #333 !important; /* Фиксированный тёмный текст */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.navbar-search:focus {
+    border-color: var(--primary-color, #007bff);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    background-color: #fff !important;
+}
+
+.navbar-search::placeholder {
+    color: rgba(0, 0, 0, 0.5) !important;
+    font-style: italic;
+}
+
+/* Отключаем переопределение для темной темы с использованием !important */
+body.dark-theme .navbar-search {
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-theme .navbar-search:focus {
+    border-color: var(--primary-color, #007bff);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.35);
+}
+
 /* Стили для переключателя темы */
 .theme-switcher {
     display: flex;
@@ -31,13 +65,13 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 
 /* Стили темной темы */
 body.dark-theme {
-    background-color: #1e2124;
+    background-color: #2d3338; /* Более светлый фон для темной темы */
     color: #e9ecef;
 }
 
 body.dark-theme .card {
-    background-color: #2c3034;
-    border-color: #444;
+    background-color: #3a4046; /* Более светлые карточки */
+    border-color: #4a4f55;
 }
 
 body.dark-theme .card-title {
@@ -50,7 +84,7 @@ body.dark-theme .program-path {
 }
 
 body.dark-theme #category-nav {
-    background-color: #2c3034;
+    background-color: #3a4046; /* Более светлый фон навигации */
 }
 
 body.dark-theme .nav-category-item {
@@ -222,3 +256,69 @@ body.dark-theme .theme-icon-light {
 .btn-favorite.active { color: #ffc107; }
 .btn-remove { color: #aaa; background: none; border: none; padding: 3px; position: absolute; top: 5px; right: 5px; }
 .btn-remove:hover { color: #dc3545; }
+
+/* Стили для закрепления активной категории в левом меню при прокрутке */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+}
+
+#category-nav .nav-link.active {
+    background-color: var(--primary-color);
+    color: white;
+    position: relative;
+    z-index: 5;
+}
+
+/* Индикатор активной категории */
+#category-nav .nav-link.active::after {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 5px;
+    height: 80%;
+    background-color: var(--primary-color);
+    border-radius: 2px;
+}
+
+/* Улучшенный стиль контейнера с прокруткой категорий */
+.nav-scroll-container {
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding-right: 5px;
+    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 123, 255, 0.5) transparent;
+}
+
+.nav-scroll-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.nav-scroll-container::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 123, 255, 0.5);
+    border-radius: 3px;
+}
+
+.nav-scroll-container::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+/* Визуальный эффект при прокрутке активного элемента */
+#category-nav .nav-link.active.viewed {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5), 0 0 15px rgba(0, 123, 255, 0.7);
+    transition: box-shadow 0.3s ease;
+}
+
+/* Индикатор текущей позиции просмотра */
+.category-indicator {
+    position: fixed;
+    left: 0;
+    width: 8px;
+    background-color: var(--primary-color);
+    border-radius: 0 4px 4px 0;
+    z-index: 1000;
+    transition: all 0.2s ease;
+}
