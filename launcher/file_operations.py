@@ -40,55 +40,57 @@ def load_program_list(program_class=None, base_directory=None):
         return [], {}
     
     # Пробуем разные кодировки
-    for encoding in ['utf-8-sig', 'utf-16', 'cp1251']:
+    for encoding in ['utf-8-sig', 'utf-8', 'cp1251', 'utf-16']:
         try:
             with open(list_path, 'r', encoding=encoding) as f:
-                for line in f:
+                print(f"Чтение файла list.txt в кодировке {encoding}")
+                for line_num, line in enumerate(f, 1):
                     line = line.strip()
                     if not line:
                         continue
                     
-                    parts = line.split(' || ')
-                    if len(parts) >= 3:
-                        path = parts[0].strip()
+                    try:
+                        # Определяем тип разделителя для избранного
                         is_favorite = False
-                        
-                        # Проверяем формат маркировки (||*|| или ||-|| между путем и категорией)
-                        if len(parts) > 1:
-                            # Если разделитель - ||*||, программа избранная
-                            if "||*||" in line:
-                                is_favorite = True
-                                # Исправляем разбивку частей, т.к. split мог неправильно разделить из-за *
-                                path_parts = line.split("||*||", 1)
-                                if len(path_parts) > 1:
-                                    path = path_parts[0].strip()
-                                    # Остальное разбиваем как обычно
-                                    remaining = path_parts[1].strip()
-                                    remaining_parts = remaining.split(' || ')
-                                    if len(remaining_parts) >= 2:
-                                        category = remaining_parts[0].strip()
-                                        description = remaining_parts[1].strip().replace('\\n', '\n')
-                                    else:
-                                        # Если не удалось разделить оставшуюся часть, используем значения по умолчанию
-                                        category = "Без категории"
-                                        description = "Без описания"
-                            else:
-                                # Если разделитель не ||*||, используем обычный метод разбивки
-                                category = parts[1].strip()
-                                description = parts[2].strip().replace('\\n', '\n')
+                        if "||*||" in line:
+                            is_favorite = True
+                            path, rest = line.split("||*||", 1)
+                        elif "||-||" in line:
+                            path, rest = line.split("||-||", 1)
                         else:
-                            # Если частей меньше, используем обычные значения
+                            # Старый формат, разделенный ' || '
+                            parts = line.split(' || ')
+                            if len(parts) < 3:
+                                print(f"Предупреждение: строка {line_num} имеет неверный формат: {line}")
+                                continue
+                            path = parts[0].strip()
                             category = parts[1].strip()
-                            description = parts[2].strip().replace('\\n', '\n')
+                            description = ' || '.join(parts[2:]).strip()
+                            rest = None
+                        
+                        # Обрабатываем новый формат (с ||*|| или ||-||)
+                        if rest is not None:
+                            rest_parts = rest.split(' || ', 1)
+                            if len(rest_parts) < 2:
+                                print(f"Предупреждение: неверный формат после разделителя в строке {line_num}: {line}")
+                                category = rest_parts[0].strip()
+                                description = "Без описания"
+                            else:
+                                category = rest_parts[0].strip()
+                                description = rest_parts[1].strip()
+                        
+                        # Восстанавливаем переносы строк в описании
+                        description = description.replace('\\n', '\n')
+                        
+                        # Очищаем пути от лишних пробелов
+                        path = path.strip()
                         
                         # Экранируем HTML только в категории
                         category_safe = escape_html(category)
-                        # Сохраняем описание как есть (с переносами строк)
-                        description_raw = description 
                         
                         if program_class:
                             # Создаем объект с экранированной категорией и НЕэкранированным описанием
-                            program = program_class(path, category_safe, description_raw, is_favorite)
+                            program = program_class(path, category_safe, description, is_favorite)
                             program.original_category = category
                             program.original_description = description # Сохраняем оригинальное описание
                             programs.append(program)
@@ -97,7 +99,7 @@ def load_program_list(program_class=None, base_directory=None):
                             programs.append({
                                 'path': path,
                                 'category': category_safe,
-                                'description': description_raw,
+                                'description': description,
                                 'is_favorite': is_favorite,
                                 'original_category': category,
                                 'original_description': description
@@ -107,6 +109,10 @@ def load_program_list(program_class=None, base_directory=None):
                         category_lower = category.lower()
                         if category_lower not in category_icons:
                             category_icons[category_lower] = '<i class="bi bi-app"></i>'  # Иконка по умолчанию
+                    except Exception as e:
+                        print(f"Ошибка при обработке строки {line_num}: {line}")
+                        print(f"Ошибка: {str(e)}")
+                        continue
             
             print(f"Загружено {len(programs)} программ из list.txt")
             break
