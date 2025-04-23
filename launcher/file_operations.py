@@ -53,12 +53,33 @@ def load_program_list(program_class=None, base_directory=None):
                         path = parts[0].strip()
                         is_favorite = False
                         
-                        if path.startswith('*'):
-                            is_favorite = True
-                            path = path[1:]
-                            
-                        category = parts[1].strip()
-                        description = parts[2].strip().replace('\\n', '\n')
+                        # Проверяем формат маркировки (||*|| или ||-|| между путем и категорией)
+                        if len(parts) > 1:
+                            # Если разделитель - ||*||, программа избранная
+                            if "||*||" in line:
+                                is_favorite = True
+                                # Исправляем разбивку частей, т.к. split мог неправильно разделить из-за *
+                                path_parts = line.split("||*||", 1)
+                                if len(path_parts) > 1:
+                                    path = path_parts[0].strip()
+                                    # Остальное разбиваем как обычно
+                                    remaining = path_parts[1].strip()
+                                    remaining_parts = remaining.split(' || ')
+                                    if len(remaining_parts) >= 2:
+                                        category = remaining_parts[0].strip()
+                                        description = remaining_parts[1].strip().replace('\\n', '\n')
+                                    else:
+                                        # Если не удалось разделить оставшуюся часть, используем значения по умолчанию
+                                        category = "Без категории"
+                                        description = "Без описания"
+                            else:
+                                # Если разделитель не ||*||, используем обычный метод разбивки
+                                category = parts[1].strip()
+                                description = parts[2].strip().replace('\\n', '\n')
+                        else:
+                            # Если частей меньше, используем обычные значения
+                            category = parts[1].strip()
+                            description = parts[2].strip().replace('\\n', '\n')
                         
                         # Экранируем HTML только в категории
                         category_safe = escape_html(category)
@@ -107,10 +128,6 @@ def save_program_list(programs, base_directory=None):
     list_path = os.path.join(base_dir, 'list.txt')
     
     try:
-        # Создаем резервную копию
-        if os.path.exists(list_path):
-            shutil.copy2(list_path, list_path + '.bak')
-
         print(f"Сохранение {len(programs)} программ в {list_path}") # Добавлено логирование
 
         with open(list_path, 'w', encoding='utf-8') as f:
@@ -133,10 +150,11 @@ def save_program_list(programs, base_directory=None):
                 category = unescape_html(category)
                 description = unescape_html(description)
                 
-                favorite_mark = '*' if is_favorite else ''
+                # Используем новый формат маркировки избранного
+                favorite_mark = "||*||" if is_favorite else "||-||"
                 # Корректное экранирование переносов строк для записи в файл
                 escaped_description = description.replace('\r', '').replace('\n', '\\n') 
-                f.write(f"{favorite_mark}{path} || {category} || {escaped_description}\n")
+                f.write(f"{path} {favorite_mark} {category} || {escaped_description}\n")
         
         print(f"Список программ успешно сохранен в {list_path}")
         return True

@@ -36,6 +36,7 @@ def register_routes():
     # Импортируем зависимости, переименовывая remove_program для избежания конфликта
     from program_operations import toggle_favorite, change_description, remove_program as remove_program_from_list
     from program_operations import remove_category as remove_category_from_list, clear_favorites as clear_favorites_list
+    from program_operations import move_favorites_to_category as move_favorites_to_category_func
     from scan_operations import start_scan_in_thread, get_scan_status
     from program_launcher import launch_program, handle_open_folder
     
@@ -302,3 +303,18 @@ def register_routes():
                 return Response(f"Информация: {message}", content_type='text/plain; charset=utf-8')
         except Exception as e:
             return handle_api_error(e, "при очистке избранного")
+
+    @app.route('/move_favorites')
+    def api_move_favorites():
+        """Перемещает все программы из избранного в указанную категорию"""
+        try:
+            new_category = get_validated_param('category')
+            
+            success, message = move_favorites_to_category_func(new_category, save_program_list_func)
+            
+            if success:
+                return Response(message, content_type='text/plain; charset=utf-8')
+            else:
+                return Response(f"Информация: {message}", content_type='text/plain; charset=utf-8')
+        except Exception as e:
+            return handle_api_error(e, "при перемещении избранных программ")

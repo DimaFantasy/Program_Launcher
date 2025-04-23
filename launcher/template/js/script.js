@@ -789,6 +789,81 @@ function clearAllFavorites() {
         });
 }
 
+// Функция для отображения модального окна перемещения избранных программ
+function showMoveFavoritesModal() {
+    // Очищаем поле ввода имени новой категории
+    document.getElementById("moveFavoritesCategoryName").value = "";
+    
+    // Копируем все опции из основного списка категорий в список категорий для избранного
+    const sourceSelect = document.getElementById("categorySelect");
+    const targetSelect = document.getElementById("favoritesCategorySelect");
+    
+    // Очищаем целевой список перед копированием
+    targetSelect.innerHTML = "";
+    
+    // Копируем опции из исходного селекта, кроме категории "Избранное"
+    for (let i = 0; i < sourceSelect.options.length; i++) {
+        const option = sourceSelect.options[i];
+        if (option.value.toLowerCase() !== "избранное") {
+            targetSelect.add(new Option(option.text, option.value));
+        }
+    }
+    
+    // Показываем модальное окно
+    const modal = new bootstrap.Modal(document.getElementById("moveFavoritesModal"));
+    modal.show();
+}
+
+// Функция для перемещения избранных программ в новую категорию
+function moveFavoritesToCategory() {
+    const favoritesCategorySelect = document.getElementById("favoritesCategorySelect");
+    const newCategoryInputValue = document.getElementById("moveFavoritesCategoryName").value.trim();
+    
+    // Определяем, какая категория выбрана - приоритет у ввода новой категории
+    let newCategory = newCategoryInputValue || favoritesCategorySelect.value;
+    
+    if (!newCategory) {
+        showToast("Ошибка", "Необходимо выбрать существующую категорию или ввести новую", "danger");
+        return;
+    }
+    
+    // Показываем индикатор загрузки в виде Toast
+    showToast("Информация", "Перемещение избранных программ...", "info");
+    
+    // Находим кнопку и показываем индикатор загрузки
+    const saveBtn = document.getElementById("saveMovedFavorites");
+    const originalBtnHTML = saveBtn.innerHTML;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Перемещаем...';
+
+    // Отправляем GET-запрос на сервер
+    fetch(`/move_favorites?category=${encodeURIComponent(newCategory)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Сервер вернул ${response.status}: ${response.statusText}`);
+            }
+            return response.text();
+        })
+        .then(data => {
+            console.log("Ответ сервера:", data);
+            showToast("Успешно", data, "success");
+            // Скрываем модальное окно
+            bootstrap.Modal.getInstance(document.getElementById("moveFavoritesModal")).hide();
+            // Перезагружаем страницу
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        })
+        .catch(error => {
+            console.error("Ошибка при перемещении избранных программ:", error);
+            showToast("Ошибка", "Не удалось переместить программы: " + error, "danger");
+        })
+        .finally(() => {
+            saveBtn.innerHTML = originalBtnHTML;
+            saveBtn.disabled = false;
+        });
+}
+
 // Обработчики событий DOM
 document.addEventListener("DOMContentLoaded", function() {
     // Инициализация ScrollSpy
@@ -828,6 +903,20 @@ document.addEventListener("DOMContentLoaded", function() {
             event.stopPropagation();
             clearAllFavorites();
         });
+    });
+    
+    // Обработчик для кнопки перемещения избранного
+    document.querySelectorAll(".move-favorites-btn").forEach(button => {
+        button.addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            showMoveFavoritesModal();
+        });
+    });
+    
+    // Обработчик для кнопки сохранения перемещенных избранных
+    document.getElementById("saveMovedFavorites").addEventListener("click", function() {
+        moveFavoritesToCategory();
     });
     
     // Обработчик для очистки лога при закрытии модального окна описания

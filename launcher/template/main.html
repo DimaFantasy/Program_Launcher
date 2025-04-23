@@ -136,6 +136,37 @@
     </div>
 </div>
 
+<!-- Модальное окно для перемещения избранных программ -->
+<div class="modal fade" id="moveFavoritesModal" tabindex="-1" aria-labelledby="moveFavoritesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="moveFavoritesModalLabel">Изменение категории</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="favoritesCategorySelect" class="form-label">Выберите существующую категорию:</label>
+                    <select class="form-select" id="favoritesCategorySelect">
+                        <!-- CATEGORY_SELECT_PLACEHOLDER -->
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="moveFavoritesCategoryName" class="form-label">Или создайте новую категорию:</label>
+                    <input type="text" class="form-control" id="moveFavoritesCategoryName" placeholder="Введите название новой категории">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveMovedFavorites">Переместить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Контейнер для toast-уведомлений -->
+<div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;"></div>
+
 <!-- Модальное окно для отображения процесса сканирования -->
 <div class="modal fade" id="scanningModal" tabindex="-1" aria-labelledby="scanningModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
@@ -174,7 +205,7 @@
 <!-- Footer -->
 <footer class="bg-dark text-white mt-5 py-3">
     <div class="container d-flex justify-content-between align-items-center">
-        <p class="mb-0"><i class="bi bi-disc"></i> Programs-2k10 Launcher © 2025</p>
+        <p class="mb-0"><i class="bi bi-disc"></i> Programs-2k10 Launcher 2025</p>
         <div class="theme-switcher">
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="themeSwitcher">

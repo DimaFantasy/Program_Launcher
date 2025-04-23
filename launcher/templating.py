@@ -175,7 +175,8 @@ class TemplateEngine:
                     category_name="Избранное",
                     category_id_original="Избранное",
                     rename_button="",  # Пустая строка вместо кнопки
-                    delete_category_button=f'<button class="btn btn-sm btn-danger clear-favorites-btn" title="Удалить все программы из избранного в списке List.txt"><i class="bi bi-trash"></i> Удалить из списка List.txt</button>'
+                    delete_category_button=f'<button class="btn btn-sm btn-danger clear-favorites-btn" title="Удалить все программы из избранного в списке"><i class="bi bi-trash"></i> Удалить из списка</button>',
+                    move_favorites_button=f'<button class="btn btn-sm btn-primary move-favorites-btn ms-2" title="Переместить все избранные программы в новую категорию"><i class="bi bi-folder-symlink"></i> Переместить</button>'
                 )
                 favorites_category = favorites_category.replace("<!-- EXECUTABLE_PLACEHOLDER -->", "\n".join(favorite_programs_html))
                 content_categories.append(favorites_category)
@@ -216,7 +217,7 @@ class TemplateEngine:
                 # Добавляем кнопку удаления категории, но не для категории "Избранное"
                 delete_category_button = ""
                 if category.lower() != "избранное":
-                    delete_category_button = f'<button class="btn btn-sm btn-danger delete-category-btn ms-2" data-category="{escape(category)}" title="Удалить категорию из списка List.txt"><i class="bi bi-trash"></i> Удалить списка List.txt</button>'
+                    delete_category_button = f'<button class="btn btn-sm btn-danger delete-category-btn ms-2" data-category="{escape(category)}" title="Удалить категорию из списка"><i class="bi bi-trash"></i> Удалить списка</button>'
                 
                 category_html = self.render_template(category_template,
                     category_id=category_id,
@@ -224,8 +225,9 @@ class TemplateEngine:
                     category_icon=category_icons.get(category.lower(), self.default_icon),
                     category_name=escape(category),
                     category_id_original=escape(category),
+                    delete_category_button=delete_category_button,
                     rename_button=rename_button,
-                    delete_category_button=delete_category_button
+                    move_favorites_button=""  # Пустая строка для обычных категорий
                 )
                 category_html = category_html.replace("<!-- EXECUTABLE_PLACEHOLDER -->", "\n".join(programs_html))
                 content_categories.append(category_html)

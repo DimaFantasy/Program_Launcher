@@ -154,3 +154,37 @@ def remove_category(category_to_remove, save_func):
         return result, f"Удалено {removed_count} программ из категории '{category_to_remove}'"
     else:
         return False, f"Программы в категории '{category_to_remove}' не найдены"
+
+def move_favorites_to_category(new_category, save_func):
+    """Перемещает все избранные программы в указанную категорию"""
+    global EXECUTABLE
+    
+    # Экранируем HTML в новой категории
+    from html_utils import escape_html
+    new_category_safe = escape_html(new_category)
+    
+    print(f"Перемещение избранных программ в категорию: {new_category}")
+    
+    # Счетчик перемещенных программ
+    moved_count = 0
+    
+    # Перебираем все программы и изменяем категорию у избранных
+    for program in EXECUTABLE:
+        if program.is_favorite:
+            # Сохраняем старую категорию для логирования
+            old_category = getattr(program, 'original_category', program.category)
+            
+            # Обновляем категорию
+            program.category = new_category_safe
+            program.original_category = new_category
+            
+            print(f"Программа '{program.path}' перемещена из '{old_category}' в '{new_category}'")
+            moved_count += 1
+    
+    if moved_count > 0:
+        print(f"Всего перемещено программ: {moved_count}")
+        # Сохраняем изменения
+        result = save_func()
+        return result, f"Перемещено {moved_count} программ в категорию '{new_category}'"
+    else:
+        return False, "В избранном нет программ для перемещения"
