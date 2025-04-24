@@ -1,78 +1,80 @@
 @echo off
+echo Installing Program Launcher context menu...
 
-rem This script automates the installation of Shortcut Creator application
+set PYTHON_FOUND=no
 
-rem Change to the installer directory
-cd /d "%~dp0"
-
-echo Checking for Python installation...
-
-rem Try common Python executable names
-set PYTHON_FOUND=0
-
-rem Try 'python' command
+REM Try python command
 python --version >nul 2>&1
-if %ERRORLEVEL% EQU 0 (
-    echo Found Python with 'python' command
-    set PYTHON_CMD=python
-    set PYTHON_FOUND=1
-    goto PYTHON_FOUND
+if not errorlevel 1 (
+    echo Python found as 'python'
+    set PYTHON_FOUND=yes
+    python setup.py install
+    if errorlevel 1 (
+        echo WARNING: Context menu installation failed. Try running as administrator.
+    ) else (
+        echo.
+        echo Context menu installation completed successfully.
+        echo.
+        echo IMPORTANT: You need to restart Windows Explorer to see the changes:
+        echo 1. Open Task Manager (Ctrl+Shift+Esc)
+        echo 2. Find "Windows Explorer" in the processes list
+        echo 3. Right-click on it and select "Restart"
+        echo.
+        echo After restarting Explorer, right-click on any folder or inside any folder
+        echo to see the "Create Program Launcher shortcut" menu option.
+    )
+    goto :end
 )
 
-rem Try 'python3' command
+REM Try python3 command
 python3 --version >nul 2>&1
-if %ERRORLEVEL% EQU 0 (
-    echo Found Python with 'python3' command
-    set PYTHON_CMD=python3
-    set PYTHON_FOUND=1
-    goto PYTHON_FOUND
+if not errorlevel 1 (
+    echo Python found as 'python3'
+    set PYTHON_FOUND=yes
+    python3 setup.py install
+    if errorlevel 1 (
+        echo WARNING: Context menu installation failed. Try running as administrator.
+    ) else (
+        echo.
+        echo Context menu installation completed successfully.
+        echo.
+        echo IMPORTANT: You need to restart Windows Explorer to see the changes:
+        echo 1. Open Task Manager (Ctrl+Shift+Esc)
+        echo 2. Find "Windows Explorer" in the processes list
+        echo 3. Right-click on it and select "Restart"
+        echo.
+        echo After restarting Explorer, right-click on any folder or inside any folder
+        echo to see the "Create Program Launcher shortcut" menu option.
+    )
+    goto :end
 )
 
-rem Try 'py' command
+REM Try py command
 py --version >nul 2>&1
-if %ERRORLEVEL% EQU 0 (
-    echo Found Python with 'py' command
-    set PYTHON_CMD=py
-    set PYTHON_FOUND=1
-    goto PYTHON_FOUND
-)
-
-rem Try looking for Python in standard install locations
-if exist "C:\Program Files\Python*\python.exe" (
-    for /d %%i in ("C:\Program Files\Python*") do (
-        if exist "%%i\python.exe" (
-            echo Found Python at %%i\python.exe
-            set PYTHON_CMD="%%i\python.exe"
-            set PYTHON_FOUND=1
-            goto PYTHON_FOUND
-        )
+if not errorlevel 1 (
+    echo Python found as 'py'
+    set PYTHON_FOUND=yes
+    py setup.py install
+    if errorlevel 1 (
+        echo WARNING: Context menu installation failed. Try running as administrator.
+    ) else (
+        echo.
+        echo Context menu installation completed successfully.
+        echo.
+        echo IMPORTANT: You need to restart Windows Explorer to see the changes:
+        echo 1. Open Task Manager (Ctrl+Shift+Esc)
+        echo 2. Find "Windows Explorer" in the processes list
+        echo 3. Right-click on it and select "Restart"
+        echo.
+        echo After restarting Explorer, right-click on any folder or inside any folder
+        echo to see the "Create Program Launcher shortcut" menu option.
     )
+    goto :end
 )
 
-if exist "C:\Python*\python.exe" (
-    for /d %%i in ("C:\Python*") do (
-        if exist "%%i\python.exe" (
-            echo Found Python at %%i\python.exe
-            set PYTHON_CMD="%%i\python.exe"
-            set PYTHON_FOUND=1
-            goto PYTHON_FOUND
-        )
-    )
+if "%PYTHON_FOUND%"=="no" (
+    echo Python not found. Please install Python 3.x and try again.
 )
 
-if %PYTHON_FOUND% EQU 0 (
-    echo Python not found. Please install Python 3.6 or higher.
-    echo Download Python from: https://www.python.org/downloads/
-    echo Or add your Python installation to the PATH environment variable.
-    pause
-    exit /b 1
-)
-
-:PYTHON_FOUND
-echo Installing Shortcut Creator...
-
-rem Install dependencies and register context menu using Python
-%PYTHON_CMD% setup.py install
-
-echo Installation complete!
+:end
 pause
