@@ -3,6 +3,7 @@ import sys
 import subprocess
 import platform
 import ctypes
+import winreg  # Добавляем модуль winreg для работы с реестром напрямую через Python
 
 MENU_NAME = "Создать ярлык Program Launcher"
 COMMAND_KEY = "Program_Launcher.ShortcutCreator"
@@ -40,8 +41,98 @@ def get_icon_path():
     
     return icon_path
 
+# Новый метод регистрации контекстного меню через Python API
+def register_menu_entry_winreg(key_path, menu_name, command, icon_path=None):
+    """Регистрирует контекстное меню через Python winreg"""
+    try:
+        # Преобразуем путь реестра в компоненты
+        if key_path.startswith("HKEY_CLASSES_ROOT\\"):
+            hkey = winreg.HKEY_CLASSES_ROOT
+            subkey = key_path[18:]  # Убираем HKEY_CLASSES_ROOT\\
+        elif key_path.startswith("HKEY_CURRENT_USER\\"):
+            hkey = winreg.HKEY_CURRENT_USER
+            subkey = key_path[17:]  # Убираем HKEY_CURRENT_USER\\
+        elif key_path.startswith("HKEY_LOCAL_MACHINE\\"):
+            hkey = winreg.HKEY_LOCAL_MACHINE
+            subkey = key_path[19:]  # Убираем HKEY_LOCAL_MACHINE\\
+        else:
+            print(f"Неподдерживаемый корневой ключ в {key_path}")
+            return False
+            
+        # Создаем основной ключ
+        key = winreg.CreateKey(hkey, subkey)
+        winreg.SetValueEx(key, "", 0, winreg.REG_SZ, menu_name)
+        
+        # Добавляем иконку, если указана
+        if icon_path and os.path.exists(icon_path):
+            winreg.SetValueEx(key, "Icon", 0, winreg.REG_SZ, icon_path)
+        
+        # Создаем подключ command
+        cmd_key = winreg.CreateKey(hkey, f"{subkey}\\command")
+        winreg.SetValueEx(cmd_key, "", 0, winreg.REG_SZ, command)
+        
+        # Закрываем ключи
+        winreg.CloseKey(cmd_key)
+        winreg.CloseKey(key)
+        
+        return True
+    except Exception as e:
+        print(f"Ошибка при регистрации меню {key_path}: {e}")
+        return False
+
+# Новый метод удаления ключа реестра через Python API
+def unregister_menu_entry_winreg(key_path):
+    """Удаляет контекстное меню с использованием Python winreg"""
+    try:
+        # Преобразуем путь реестра в компоненты
+        if key_path.startswith("HKEY_CLASSES_ROOT\\"):
+            hkey = winreg.HKEY_CLASSES_ROOT
+            subkey = key_path[18:]  # Убираем HKEY_CLASSES_ROOT\\
+        elif key_path.startswith("HKEY_CURRENT_USER\\"):
+            hkey = winreg.HKEY_CURRENT_USER
+            subkey = key_path[17:]  # Убираем HKEY_CURRENT_USER\\
+        elif key_path.startswith("HKEY_LOCAL_MACHINE\\"):
+            hkey = winreg.HKEY_LOCAL_MACHINE
+            subkey = key_path[19:]  # Убираем HKEY_LOCAL_MACHINE\\
+        else:
+            print(f"Неподдерживаемый корневой ключ в {key_path}")
+            return True  # Пропускаем неизвестные пути
+            
+        # Проверяем существование ключа
+        try:
+            winreg.OpenKey(hkey, subkey)
+        except FileNotFoundError:
+            # Ключ не существует, пропускаем его удаление
+            return True
+            
+        # Удаляем подключ command, если он существует
+        try:
+            winreg.DeleteKey(hkey, f"{subkey}\\command")
+        except FileNotFoundError:
+            pass  # Игнорируем, если ключа нет
+            
+        # Удаляем основной ключ
+        try:
+            winreg.DeleteKey(hkey, subkey)
+        except OSError as e:
+            if e.winerror == 5:  # Отказано в доступе
+                print(f"Отказано в доступе при удалении {key_path}. Требуются права администратора.")
+            else:
+                print(f"Ошибка при удалении {key_path}: {e}")
+            return False
+            
+        return True
+    except Exception as e:
+        print(f"Ошибка при удалении меню {key_path}: {e}")
+        return False
+
 def register_menu_entry(key_path, menu_name, command, icon_path=None):
     """Централизованная функция для регистрации контекстного меню"""
+    # Сначала пробуем через winreg
+    if register_menu_entry_winreg(key_path, menu_name, command, icon_path):
+        return True
+    
+    # Если не получилось через winreg, используем reg.exe как запасной вариант
     try:
         commands = [
             f'reg add "{key_path}" /ve /t REG_SZ /d "{menu_name}" /f',
@@ -60,6 +151,11 @@ def register_menu_entry(key_path, menu_name, command, icon_path=None):
 
 def unregister_menu_entry(key_path):
     """Централизованная функция для удаления контекстного меню"""
+    # Сначала пробуем через winreg
+    if unregister_menu_entry_winreg(key_path):
+        return True
+    
+    # Если не получилось через winreg, используем reg.exe как запасной вариант
     # Проверяем существование ключа перед удалением
     check_cmd = f'reg query "{key_path}" >nul 2>&1'
     result = subprocess.run(check_cmd, shell=True)
