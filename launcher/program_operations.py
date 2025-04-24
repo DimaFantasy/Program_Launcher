@@ -37,11 +37,12 @@ def clear_favorites(save_func):
 
 class ProgramInfo:
     """Класс для хранения информации о программе"""
-    def __init__(self, path, category, description, is_favorite=False):
+    def __init__(self, path, category, description, is_favorite=False, is_hidden=False):
         self.path = path
         self.category = category
         self.description = description
         self.is_favorite = is_favorite
+        self.is_hidden = is_hidden
 
 def toggle_favorite(program_path, save_program_list_func):
     """Переключает статус избранного для программы"""
@@ -243,3 +244,71 @@ def move_favorites_to_category(new_category, save_func):
         return result, f"Перемещено {moved_count} программ в категорию '{new_category}'"
     else:
         return False, "В избранном нет программ для перемещения"
+
+def toggle_hidden(program_path, save_program_list_func):
+    """Переключает статус 'скрытый' для программы"""
+    # Очищаем путь от пробелов
+    program_path = program_path.strip() if program_path else ""
+    
+    found = False
+    is_hidden = False
+    is_favorite = False
+    modified_program = None
+    
+    # Проверяем, находится ли программа в избранном и меняем её статус
+    for program in EXECUTABLE:
+        clean_program_path = program.path.strip()
+        
+        if clean_program_path == program_path:
+            found = True
+            is_favorite = program.is_favorite
+            # Запоминаем текущее значение
+            current_hidden_status = program.is_hidden
+            # Инвертируем статус скрытия
+            program.is_hidden = not current_hidden_status
+            is_hidden = program.is_hidden
+            modified_program = program
+            break
+    
+    if found:
+        # Если программа найдена, сохраняем изменения и проверяем результат
+        try:
+            print(f"Изменение статуса 'скрытый' для программы: {program_path}")
+            print(f"Старый статус: {current_hidden_status}, Новый статус: {is_hidden}")
+            print(f"Программа в избранном: {'Да' if is_favorite else 'Нет'}")
+            
+            # Для избранных программ используем дополнительную логику
+            if is_favorite:
+                print("Обрабатываем программу в избранном, используем специальную логику сохранения")
+                # Форсируем дополнительное обновление атрибута
+                if modified_program:
+                    modified_program.is_hidden = is_hidden
+                    print(f"Статус скрытия программы в избранном установлен на: {is_hidden}")
+            
+            # Вызываем функцию сохранения и проверяем результат
+            save_result = save_program_list_func()
+            print(f"Результат сохранения: {save_result}")
+            
+            # Если сохранение не удалось или программа в избранном, 
+            # выполняем повторное сохранение для гарантии
+            if not save_result or is_favorite:
+                print("Выполняем принудительное повторное сохранение для надежности...")
+                # Еще раз подтверждаем статус скрытия перед сохранением
+                if modified_program:
+                    modified_program.is_hidden = is_hidden
+                # Повторное сохранение
+                save_result = save_program_list_func()
+                print(f"Результат повторного сохранения: {save_result}")
+            
+            return True, is_hidden
+        except Exception as e:
+            print(f"Ошибка при сохранении статуса скрытия: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # В случае ошибки возвращаем оригинальное значение
+            if modified_program:
+                modified_program.is_hidden = current_hidden_status
+            return False, current_hidden_status
+    else:
+        print(f"Программа не найдена для изменения статуса скрытия: {program_path}")
+        return False, False

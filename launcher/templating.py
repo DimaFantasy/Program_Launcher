@@ -150,20 +150,41 @@ class TemplateEngine:
                     program_name = os.path.splitext(os.path.basename(program.path))[0]
                     encoded_path = urllib.parse.quote(program.path)
                     
+                    # Настройки для избранных программ
+                    favorite_class = "active"
+                    favorite_icon = "-fill"
+                    favorite_title = "Удалить из избранного"
+                    
+                    # Настройки для скрытых программ
+                    hide_class = "active" if program.is_hidden else ""
+                    hide_icon = "-slash" if program.is_hidden else ""
+                    hide_title = "Отобразить программу" if program.is_hidden else "Скрыть программу"
+                    
+                    # Настройки для индикации существования файла
+                    file_exists = getattr(program, 'file_exists', True)  # По умолчанию True, если атрибут не существует
+                    file_exists_class = "" if file_exists else "file-not-exists"
+                    file_exists_indicator = "" if file_exists else '<span class="file-not-exists-indicator"><i class="bi bi-exclamation-triangle-fill"></i> Файл не существует</span>'
+                    
                     program_card = self.render_template(program_card_template,
                         program_name_lower=program_name.lower(),
-                        category_lower="избранное favorites",
+                        category_lower=program.category.lower(),
                         description_lower=program.description.lower(),
-                        favorite_class="active",
+                        is_hidden=str(program.is_hidden).lower(),
+                        favorite_class=favorite_class,
+                        hide_class=hide_class,
                         encoded_path=encoded_path,
-                        favorite_title="Удалить из избранного",
-                        favorite_icon="-fill",
+                        favorite_title=favorite_title,
+                        hide_title=hide_title,
+                        favorite_icon=favorite_icon,
+                        hide_icon=hide_icon,
                         program_icon=self.default_icon,
                         program_name=escape(program_name),
                         description=escape(program.description),
                         description_attr=escape(program.description),
                         program_path=escape(program.path),
-                        category_attr=escape(program.category)
+                        category_attr=escape(program.category),
+                        file_exists_class=file_exists_class,
+                        file_exists_indicator=file_exists_indicator
                     )
                     favorite_programs_html.append(program_card)
                 
@@ -190,24 +211,41 @@ class TemplateEngine:
                     program_name = os.path.splitext(os.path.basename(program.path))[0]
                     encoded_path = urllib.parse.quote(program.path)
                     
+                    # Настройки для избранного
                     favorite_class = 'active' if program.is_favorite else ''
                     favorite_icon = "-fill" if program.is_favorite else ""
                     favorite_title = "Удалить из избранного" if program.is_favorite else "Добавить в избранное"
                     
+                    # Настройки для скрытых программ
+                    hide_class = "active" if program.is_hidden else ""
+                    hide_icon = "-slash" if program.is_hidden else ""
+                    hide_title = "Отобразить программу" if program.is_hidden else "Скрыть программу"
+                    
+                    # Настройки для индикации существования файла
+                    file_exists = getattr(program, 'file_exists', True)  # По умолчанию True, если атрибут не существует
+                    file_exists_class = "" if file_exists else "file-not-exists"
+                    file_exists_indicator = "" if file_exists else '<span class="file-not-exists-indicator"><i class="bi bi-exclamation-triangle-fill"></i> Файл не существует</span>'
+                    
                     program_card = self.render_template(program_card_template,
                         program_name_lower=program_name.lower(),
-                        category_lower=category.lower(),
+                        category_lower=program.category.lower(),
                         description_lower=program.description.lower(),
+                        is_hidden=str(program.is_hidden).lower(),
                         favorite_class=favorite_class,
+                        hide_class=hide_class,
                         encoded_path=encoded_path,
                         favorite_title=favorite_title,
+                        hide_title=hide_title,
                         favorite_icon=favorite_icon,
+                        hide_icon=hide_icon,
                         program_icon=self.default_icon,
                         program_name=escape(program_name),
                         description=escape(program.description),
                         description_attr=escape(program.description),
                         program_path=escape(program.path),
-                        category_attr=escape(category)
+                        category_attr=escape(category),
+                        file_exists_class=file_exists_class,
+                        file_exists_indicator=file_exists_indicator
                     )
                     programs_html.append(program_card)
                 
@@ -217,7 +255,7 @@ class TemplateEngine:
                 # Добавляем кнопку удаления категории, но не для категории "Избранное"
                 delete_category_button = ""
                 if category.lower() != "избранное":
-                    delete_category_button = f'<button class="btn btn-sm btn-danger delete-category-btn ms-2" data-category="{escape(category)}" title="Удалить категорию из списка"><i class="bi bi-trash"></i> Удалить списка</button>'
+                    delete_category_button = f'<button class="btn btn-sm btn-danger delete-category-btn ms-2" data-category="{escape(category)}" title="Удалить категорию из списка"><i class="bi bi-trash"></i> Удалить из списка</button>'
                 
                 category_html = self.render_template(category_template,
                     category_id=category_id,

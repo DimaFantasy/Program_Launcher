@@ -8,6 +8,27 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 .card-text { color: #6c757d; font-size: 0.9rem; }
 .program-path { font-size: 0.8rem; color: #6c757d; font-family: monospace; }
 
+/* Стили для несуществующих файлов */
+.card.file-not-exists {
+    border: 1px solid #dc3545;
+    box-shadow: 0 0 5px rgba(220, 53, 69, 0.3);
+}
+
+.card.file-not-exists:hover {
+    box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+}
+
+.file-not-exists-indicator {
+    color: #dc3545;
+    font-size: 0.8rem;
+    margin-left: 10px;
+}
+
+body.dark-theme .card.file-not-exists {
+    border: 1px solid #dc3545;
+    box-shadow: 0 0 5px rgba(220, 53, 69, 0.4);
+}
+
 /* Стили для строки поиска - фиксированные для обеих тем */
 .navbar-search {
     width: 300px;
@@ -191,11 +212,12 @@ body.dark-theme .theme-icon-light {
 }
 
 .nav-category-item {
-    padding: 10px 15px;
+    padding: 8px 10px;
     border-radius: 5px;
     margin-bottom: 5px;
     transition: all 0.2s ease;
     color: #495057;
+    overflow: hidden;
 }
 
 .nav-category-item:hover {
@@ -219,8 +241,30 @@ body.dark-theme .theme-icon-light {
     color: #ffc107 !important;
 }
 
+/* Контейнер для иконки и названия категории */
+.nav-category-item div {
+    display: flex;
+    align-items: center;
+    max-width: 80%;
+    overflow: hidden;
+}
+
+/* Стили для иконки категории */
+.category-icon {
+    flex-shrink: 0;
+    margin-right: 8px;
+    width: 18px;
+    display: inline-flex;
+    justify-content: center;
+}
+
+/* Стили для названия категории */
 .category-name {
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
 }
 
 .nav-scroll-container { 
@@ -321,4 +365,147 @@ body.dark-theme .theme-icon-light {
     border-radius: 0 4px 4px 0;
     z-index: 1000;
     transition: all 0.2s ease;
+}
+
+.btn-hide { 
+    color: #aaa; 
+    background: none; 
+    border: none; 
+    padding: 3px; 
+    position: absolute; 
+    top: 5px; 
+    right: 65px; 
+}
+.btn-hide:hover { 
+    color: #17a2b8; 
+}
+.btn-hide.active { 
+    color: #17a2b8; 
+}
+
+/* Стили для скрытых программ */
+.program-card[data-hidden="true"] {
+    opacity: 0.7;
+}
+
+/* Стиль для чекбокса "Показать скрытые" */
+#showHiddenCheck {
+    cursor: pointer;
+}
+#showHiddenCheck:hover {
+    box-shadow: 0 0 3px rgba(0, 123, 255, 0.5);
+}
+
+/* Скрываем карточки скрытых программ по умолчанию */
+.program-card[data-hidden="true"] {
+    display: none;
+}
+
+/* Показываем скрытые программы, когда чекбокс отмечен */
+body.show-hidden .program-card[data-hidden="true"] {
+    display: block;
+    border: 1px dashed #17a2b8;
+}
+
+/* Стиль для контейнера "Показать скрытые" */
+.show-hidden-container {
+    background: linear-gradient(to right, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.05));
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-top: 10px;
+    border-left: 3px solid #17a2b8;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+}
+
+.show-hidden-container:hover {
+    background: linear-gradient(to right, rgba(23, 162, 184, 0.15), rgba(23, 162, 184, 0.08));
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Стиль для чекбокса "Показать скрытые" */
+#showHiddenCheck {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+#showHiddenCheck:checked {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+#showHiddenCheck:hover {
+    box-shadow: 0 0 0 3px rgba(23, 162, 184, 0.25);
+}
+
+/* Стиль для метки чекбокса */
+.show-hidden-container .form-check-label {
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    color: #495057;
+}
+
+.show-hidden-container .form-check-label i {
+    margin-right: 6px;
+    color: #17a2b8;
+    font-size: 1.1rem;
+}
+
+/* Темная тема для контейнера показа скрытых элементов */
+body.dark-theme .show-hidden-container {
+    background: linear-gradient(to right, rgba(23, 162, 184, 0.15), rgba(23, 162, 184, 0.05));
+    border-left-color: #17a2b8;
+}
+
+body.dark-theme .show-hidden-container:hover {
+    background: linear-gradient(to right, rgba(23, 162, 184, 0.25), rgba(23, 162, 184, 0.1));
+}
+
+body.dark-theme .show-hidden-container .form-check-label {
+    color: #e9ecef;
+}
+
+/* Анимация иконки глаза при включении/выключении */
+#showHiddenCheck:checked ~ label i.bi-eye {
+    animation: pulse 0.4s ease;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Стили для скрытых программ */
+.program-card[data-hidden="true"] {
+    opacity: 0.7;
+    display: none;
+}
+
+/* Показываем скрытые программы, когда чекбокс отмечен */
+body.show-hidden .program-card[data-hidden="true"] {
+    display: block;
+    border: 1px dashed #17a2b8;
+    position: relative;
+}
+
+/* Индикатор скрытой программы */
+body.show-hidden .program-card[data-hidden="true"]::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #17a2b8;
+    z-index: 1;
 }

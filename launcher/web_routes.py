@@ -37,6 +37,7 @@ def register_routes():
     from program_operations import toggle_favorite, change_description, remove_program as remove_program_from_list
     from program_operations import remove_category as remove_category_from_list, clear_favorites as clear_favorites_list
     from program_operations import move_favorites_to_category as move_favorites_to_category_func
+    from program_operations import toggle_hidden
     from scan_operations import start_scan_in_thread, get_scan_status
     from program_launcher import launch_program, handle_open_folder
     
@@ -323,3 +324,47 @@ def register_routes():
                 return Response(f"Информация: {message}", content_type='text/plain; charset=utf-8')
         except Exception as e:
             return handle_api_error(e, "при перемещении избранных программ")
+
+    @app.route('/toggle_hidden')
+    def api_toggle_hidden():
+        """Переключает статус 'скрытый' для программы"""
+        try:
+            program_path = get_validated_param('path')
+            is_favorite = request.args.get('favorite', '').lower() == 'true'
+            
+            # Нормализуем путь перед передачей для корректного поиска/сравнения
+            normalized_path = os.path.normpath(program_path)
+            
+            print(f"Запрос на переключение статуса скрытия для программы: {normalized_path}")
+            print(f"Программа в избранном: {'Да' if is_favorite else 'Нет'}")
+            
+            # Передаем нормализованный путь
+            success, is_hidden = toggle_hidden(normalized_path, save_program_list_func)
+            
+            if success:
+                status = "скрыта" if is_hidden else "отображена"
+                return Response(f"Программа {os.path.basename(program_path)} {status}", content_type='text/plain; charset=utf-8')
+            else:
+                return Response(f"Ошибка: программа не найдена: {program_path}", content_type='text/plain; charset=utf-8')
+        except Exception as e:
+            return handle_api_error(e, "при изменении статуса скрытия")
+
+    @app.route('/save_changes')
+    def api_save_changes():
+        """Принудительно сохраняет текущее состояние программ"""
+        try:
+            force = request.args.get('force', '').lower() == 'true'
+            
+            if not save_program_list_func:
+                return Response("Ошибка: Функция сохранения не инициализирована", 
+                               content_type='text/plain; charset=utf-8')
+            
+            print(f"Принудительное сохранение изменений (force={force})")
+            result = save_program_list_func()
+            
+            if result:
+                return Response("Изменения успешно сохранены", content_type='text/plain; charset=utf-8')
+            else:
+                return Response("Ошибка при сохранении изменений", content_type='text/plain; charset=utf-8')
+        except Exception as e:
+            return handle_api_error(e, "при принудительном сохранении изменений")

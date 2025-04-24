@@ -21,87 +21,6 @@ function saveSearchBeforeUnload() {
     }
 }
 
-// Утилитарная функция для безопасной обработки путей
-function processPath(path) {
-    try {
-        // Если путь содержит %, вероятно, он уже закодирован
-        if (path.includes('%')) {
-            // Пытаемся декодировать, чтобы избежать двойного кодирования
-            path = decodeURIComponent(path);
-        }
-    } catch (e) {
-        console.warn("Ошибка декодирования пути:", e);
-        // Если ошибка декодирования, используем путь как есть
-    }
-    
-    return path;
-}
-
-// Утилитарная функция для подготовки кнопки к асинхронной операции
-function prepareButton(btn, loadingText = null) {
-    const originalHTML = btn.innerHTML;
-    if (loadingText) {
-        btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${loadingText}`;
-    } else {
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
-    }
-    btn.disabled = true;
-    
-    // Возвращаем функцию для восстановления кнопки
-    return function restoreButton(delay = 0) {
-        if (delay > 0) {
-            setTimeout(() => {
-                btn.innerHTML = originalHTML;
-                btn.disabled = false;
-            }, delay);
-        } else {
-            btn.innerHTML = originalHTML;
-            btn.disabled = false;
-        }
-    };
-}
-
-// Утилитарная функция для отправки запросов и обработки ошибок
-function sendRequest(url, onSuccess, onError, reloadPage = false, saveSearch = true) {
-    // Сохраняем поисковый запрос, если требуется
-    if (saveSearch) {
-        const searchValue = document.getElementById("searchInput")?.value;
-        if (searchValue) {
-            sessionStorage.setItem('lastSearchQuery', searchValue);
-        }
-    }
-    
-    return fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Сервер вернул ${response.status}: ${response.statusText}`);
-            }
-            return response.text();
-        })
-        .then(data => {
-            console.log("Ответ сервера:", data);
-            if (onSuccess) {
-                onSuccess(data);
-            }
-            
-            // Перезагружаем страницу, если нужно
-            if (reloadPage) {
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            }
-            
-            return data;
-        })
-        .catch(error => {
-            console.error("Ошибка:", error);
-            if (onError) {
-                onError(error);
-            }
-            throw error;
-        });
-}
-
 function filterPrograms() {
     const searchValue = document.getElementById("searchInput").value.toLowerCase().trim();
     const cards = document.querySelectorAll(".program-card");
@@ -112,33 +31,27 @@ function filterPrograms() {
     
     // Добавляем отладочную информацию
     console.log("Поиск по тексту:", searchValue, "Длина:", searchValue.length);
-    console.log("Доступные категории:", Array.from(categoryContainers).map(c => c.id));
     
     // Перебираем все карточки программ
     cards.forEach(card => {
         const name = card.getAttribute("data-name") || "";
         const category = card.getAttribute("data-category") || "";
         const description = card.getAttribute("data-description") || "";
-        const isHidden = card.getAttribute("data-hidden") === "true";
-        
-        // Отладочная информация о программе
-        console.log(`Программа: ${name}, Категория: ${category}, Скрыта: ${isHidden}`);
         
         // Если поиск пустой, показываем все карточки
         if (searchValue === "") {
             card.style.display = "";
-            // Используем категорию программы для определения видимых категорий 
-            if (category) {
-                hasVisiblePrograms[category.toLowerCase()] = true;
+            // Извлекаем категорию из атрибута и добавляем в список видимых
+            const cardCategory = card.getAttribute("data-category");
+            if (cardCategory) {
+                hasVisiblePrograms[cardCategory.toLowerCase()] = true;
             }
         } 
         // Иначе проверяем, содержит ли карточка поисковый текст
         else if (name.includes(searchValue) || category.includes(searchValue) || description.includes(searchValue)) {
             card.style.display = "";
-            // Используем категорию программы для определения видимых категорий
-            if (category) {
-                hasVisiblePrograms[category.toLowerCase()] = true;
-            }
+            // Добавляем категорию в список видимых
+            hasVisiblePrograms[category.toLowerCase()] = true;
         } else {
             card.style.display = "none";
         }
@@ -163,8 +76,7 @@ function filterPrograms() {
         const categoryOriginal = container.getAttribute("data-category-original");
         const categoryOriginalLower = categoryOriginal ? categoryOriginal.toLowerCase() : "";
         
-        console.log(`Проверка видимости для категории '${categoryId}', оригинал: '${categoryOriginal}'`);
-        console.log(`Наличие программ: ${hasVisiblePrograms[originalId] ? 'Да' : 'Нет'} или ${hasVisiblePrograms[categoryOriginalLower] ? 'Да' : 'Нет'}`);
+        console.log(`Категория '${categoryId}', оригинал: '${categoryOriginal}'`);
         
         // Проверяем видимость по всем возможным вариантам ключа категории
         if (hasVisiblePrograms[originalId] || 
@@ -180,114 +92,175 @@ function filterPrograms() {
 
 function launchProgram(path, event) {
     const btn = event.target.closest(".btn");
-    const restoreBtn = prepareButton(btn, "Запуск...");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Запуск...';
+    btn.disabled = true;
     
-    // Обрабатываем путь через общую функцию
-    path = processPath(path);
+    // Проверяем, не является ли путь уже закодированным
+    try {
+        // Если путь содержит %, вероятно, он уже закодирован
+        if (path.includes('%')) {
+            // Пытаемся декодировать и затем кодировать снова, чтобы избежать двойного кодирования
+            path = decodeURIComponent(path);
+        }
+    } catch (e) {
+        console.warn("Ошибка декодирования пути:", e);
+        // Если ошибка декодирования, используем путь как есть
+    }
     
-    // Отправляем запрос
+    // Корректно кодируем путь и логируем
     const encodedPath = encodeURIComponent(path);
     console.log("Отправка запроса launch для пути:", path);
     console.log("Закодированный путь:", encodedPath);
     
-    sendRequest(
-        `/launch?path=${encodedPath}`, 
-        (data) => {
+    fetch("/launch?path=" + encodedPath)
+        .then(response => response.text())
+        .then(data => {
+            console.log(data);
             showToast("Программа запущена", data);
-            restoreBtn(1000);
-        },
-        (error) => {
-            restoreBtn();
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 1000);
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
             showToast("Ошибка запуска", "Не удалось запустить программу: " + error, "danger");
-        },
-        false, // не перезагружать страницу
-        false  // не сохранять поисковый запрос
-    );
+        });
 }
 
 function openFolder(path, event) {
     const btn = event.target.closest(".btn");
-    const restoreBtn = prepareButton(btn);
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    btn.disabled = true;
     
-    // Обрабатываем путь через общую функцию
-    path = processPath(path);
+    // Проверяем, не является ли путь уже закодированным
+    try {
+        // Если путь содержит %, вероятно, он уже закодирован
+        if (path.includes('%')) {
+            // Пытаемся декодировать и затем кодировать снова, чтобы избежать двойного кодирования
+            path = decodeURIComponent(path);
+        }
+    } catch (e) {
+        console.warn("Ошибка декодирования пути:", e);
+        // Если ошибка декодирования, используем путь как есть
+    }
     
-    // Отправляем запрос
+    // Корректно кодируем путь и логируем
     const encodedPath = encodeURIComponent(path);
     console.log("Отправка запроса open_folder для пути:", path);
     console.log("Закодированный путь:", encodedPath);
     
-    sendRequest(
-        `/open_folder?path=${encodedPath}`, 
-        (data) => {
+    fetch("/open_folder?path=" + encodedPath)
+        .then(response => response.text())
+        .then(data => {
+            console.log(data);
             showToast("Папка открыта", data);
-            restoreBtn(1000);
-        },
-        (error) => {
-            restoreBtn();
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }, 1000);
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
             showToast("Ошибка", "Не удалось открыть папку: " + error, "danger");
-        },
-        false, // не перезагружать страницу
-        false  // не сохранять поисковый запрос
-    );
+        });
 }
 
 function toggleFavorite(path, event) {
     const btn = event.currentTarget;  // Используем currentTarget вместо closest
-    const restoreBtn = prepareButton(btn);
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    btn.disabled = true;
     
-    // Обрабатываем путь через общую функцию
-    path = processPath(path);
+    // Проверяем, не является ли путь уже закодированным
+    try {
+        // Если путь содержит %5C или %25, вероятно, он уже закодирован
+        if (path.includes('%')) {
+            // Пытаемся декодировать и затем кодировать снова, чтобы избежать двойного кодирования
+            path = decodeURIComponent(path);
+        }
+    } catch (e) {
+        console.warn("Ошибка декодирования пути:", e);
+        // Если ошибка декодирования, используем путь как есть
+    }
     
-    // Отправляем запрос
+    // Сохраняем текущий поисковый запрос
+    const searchValue = document.getElementById("searchInput").value;
+    
+    // Корректно кодируем путь и логируем
     const encodedPath = encodeURIComponent(path);
     console.log("Отправка запроса toggle_favorite для пути:", path);
     console.log("Закодированный путь:", encodedPath);
     
-    sendRequest(
-        `/toggle_favorite?path=${encodedPath}`, 
-        (data) => {
+    fetch("/toggle_favorite?path=" + encodedPath)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            return response.text();
+        })
+        .then(data => {
+            console.log("Ответ сервера:", data);
             showToast("Статус избранного изменен", data);
+            
             // Перезагрузить страницу после изменения статуса
             window.location.reload();
-        },
-        (error) => {
-            restoreBtn();
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
             showToast("Ошибка", "Не удалось изменить статус избранного: " + error, "danger");
-        },
-        false // не перезагружать страницу - мы сами вызываем reload
-    );
+        });
 }
 
 function removeProgram(path, event) {
     if (!confirm("Вы уверены, что хотите удалить эту программу из списка?")) {
         return;
     }
-    
     const btn = event.target.closest(".btn-remove");
-    const restoreBtn = prepareButton(btn);
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    btn.disabled = true;
     
-    // Обрабатываем путь через общую функцию
-    path = processPath(path);
+    // Проверяем, не является ли путь уже закодированным
+    try {
+        // Если путь содержит %, вероятно, он уже закодирован
+        if (path.includes('%')) {
+            // Пытаемся декодировать и затем кодировать снова, чтобы избежать двойного кодирования
+            path = decodeURIComponent(path);
+        }
+    } catch (e) {
+        console.warn("Ошибка декодирования пути:", e);
+        // Если ошибка декодирования, используем путь как есть
+    }
     
-    // Отправляем запрос
+    // Корректно кодируем путь и логируем
     const encodedPath = encodeURIComponent(path);
     console.log("Отправка запроса remove_program для пути:", path);
     console.log("Закодированный путь:", encodedPath);
     
-    sendRequest(
-        `/remove_program?path=${encodedPath}`, 
-        (data) => {
+    fetch("/remove_program?path=" + encodedPath)
+        .then(response => response.text())
+        .then(data => {
+            console.log(data);
             showToast("Программа удалена", data);
-            // Перезагружаем страницу после удаления
+            
+            // Перезагрузить страницу после удаления
             window.location.reload();
-        },
-        (error) => {
-            restoreBtn();
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
             showToast("Ошибка", "Не удалось удалить программу: " + error, "danger");
-        },
-        false // не перезагружать страницу - мы сами вызываем reload
-    );
+        });
 }
 
 function showToast(title, message, type = "success") {
@@ -315,7 +288,9 @@ function showToast(title, message, type = "success") {
 
 function getAIDescription(path, event) {
     const btn = event.target.closest(".btn");
-    const restoreBtn = prepareButton(btn);
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    btn.disabled = true;
     
     // Получаем карточку программы, где находится кнопка
     const card = btn.closest('.program-card');
@@ -325,10 +300,19 @@ function getAIDescription(path, event) {
     // Показываем уведомление о начале процесса
     showToast("Запрос описания", "Получаем автоматическое описание программы...", "info");
     
-    // Обрабатываем путь через общую функцию
-    path = processPath(path);
+    // Проверяем, не является ли путь уже закодированным
+    try {
+        // Если путь содержит %, вероятно, он уже закодирован
+        if (path.includes('%')) {
+            // Пытаемся декодировать и затем кодировать снова, чтобы избежать двойного кодирования
+            path = decodeURIComponent(path);
+        }
+    } catch (e) {
+        console.warn("Ошибка декодирования пути:", e);
+        // Если ошибка декодирования, используем путь как есть
+    }
     
-    // Отправляем запрос
+    // Корректно кодируем путь и логируем
     const encodedPath = encodeURIComponent(path);
     console.log("Отправка запроса get_ai_description для пути:", path);
     console.log("Закодированный путь:", encodedPath);
@@ -362,11 +346,13 @@ function getAIDescription(path, event) {
             }
             
             // Восстанавливаем состояние кнопки
-            restoreBtn();
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
         })
         .catch(error => {
             console.error("Ошибка:", error);
-            restoreBtn();
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
             showToast("Ошибка", "Не удалось получить описание: " + error, "danger");
         });
 }
@@ -1036,30 +1022,6 @@ document.addEventListener("DOMContentLoaded", function() {
     // Инициализация переключателя темы
     initThemeSwitcher();
     
-    // Обработчик для чекбокса "Показать скрытые"
-    const showHiddenCheck = document.getElementById("showHiddenCheck");
-    if (showHiddenCheck) {
-        // Проверяем, есть ли сохраненный статус в localStorage
-        const showHidden = localStorage.getItem('showHidden') === 'true';
-        if (showHidden) {
-            showHiddenCheck.checked = true;
-            document.body.classList.add('show-hidden');
-        }
-        
-        // Обработчик изменения состояния чекбокса
-        showHiddenCheck.addEventListener('change', function() {
-            if (this.checked) {
-                document.body.classList.add('show-hidden');
-                localStorage.setItem('showHidden', 'true');
-                console.log('Показать скрытые программы: включено');
-            } else {
-                document.body.classList.remove('show-hidden');
-                localStorage.setItem('showHidden', 'false');
-                console.log('Показать скрытые программы: выключено');
-            }
-        });
-    }
-    
     // Инициализируем отслеживание категорий после небольшой задержки
     setTimeout(enhancedCategoryNavigation, 500);
     
@@ -1359,77 +1321,408 @@ document.body.addEventListener('activate.bs.scrollspy', function(e) {
     console.log('Активирован раздел:', activeID);
 });
 
+// Обработчик после загрузки DOM
+document.addEventListener("DOMContentLoaded", function() {
+    // Восстанавливаем сохраненный поисковый запрос, если он есть
+    const savedSearchQuery = sessionStorage.getItem('lastSearchQuery');
+    if (savedSearchQuery) {
+        // Устанавливаем значение в поле поиска
+        const searchInput = document.getElementById("searchInput");
+        searchInput.value = savedSearchQuery;
+        
+        // Применяем фильтрацию с небольшой задержкой для полной загрузки DOM
+        setTimeout(() => {
+            filterPrograms();
+            // Чистим сохраненный запрос, чтобы он не восстанавливался при обычной перезагрузке страницы
+            sessionStorage.removeItem('lastSearchQuery');
+        }, 300);
+    }
+    
+    // Инициализируем ScrollSpy с улучшенными настройками
+    const scrollSpy = new bootstrap.ScrollSpy(document.body, {
+        target: '#category-nav',
+        offset: 100,
+        method: 'offset'
+    });
+    
+    // Создаем контейнер для toast-уведомлений
+    createToastContainer();
+    
+    // Инициализация переключателя темы
+    initThemeSwitcher();
+    
+    // Инициализируем отслеживание категорий после небольшой задержки
+    setTimeout(enhancedCategoryNavigation, 500);
+    
+    // Обработчик для чекбокса "Показать скрытые"
+    const showHiddenCheck = document.getElementById("showHiddenCheck");
+    if (showHiddenCheck) {
+        // Проверяем, есть ли сохраненный статус в localStorage
+        const showHidden = localStorage.getItem('showHidden') === 'true';
+        if (showHidden) {
+            showHiddenCheck.checked = true;
+            document.body.classList.add('show-hidden');
+        }
+        
+        // Обработчик изменения состояния чекбокса
+        showHiddenCheck.addEventListener('change', function() {
+            if (this.checked) {
+                document.body.classList.add('show-hidden');
+                localStorage.setItem('showHidden', 'true');
+            } else {
+                document.body.classList.remove('show-hidden');
+                localStorage.setItem('showHidden', 'false');
+            }
+        });
+    }
+    
+    // Обработчик для категорий в меню навигации
+    document.querySelectorAll('#category-nav .nav-link').forEach(link => {
+        link.addEventListener('mouseenter', function() {
+            this.classList.add('hovered');
+        });
+        
+        link.addEventListener('mouseleave', function() {
+            this.classList.remove('hovered');
+        });
+        
+        link.addEventListener('click', function(e) {
+            // При клике на категорию обновляем состояние навигации
+            setTimeout(enhancedCategoryNavigation, 300);
+        });
+    });
+    
+    // Обработчик для кнопок переименования категории
+    document.querySelectorAll(".rename-category-btn").forEach(button => {
+        button.addEventListener("click", function(event) {
+            event.preventDefault();
+            const categoryName = this.getAttribute("data-category");
+            showRenameCategoryModal(categoryName);
+        });
+    });
+    
+    // Обработчик для кнопок удаления категории
+    document.querySelectorAll(".delete-category-btn").forEach(button => {
+        button.addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const categoryName = this.getAttribute("data-category");
+            deleteCategory(categoryName);
+        });
+    });
+
+    // Обработчик для кнопки очистки избранного
+    document.querySelectorAll(".clear-favorites-btn").forEach(button => {
+        button.addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            clearAllFavorites();
+        });
+    });
+    
+    // Обработчик для кнопки перемещения избранного
+    document.querySelectorAll(".move-favorites-btn").forEach(button => {
+        button.addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            showMoveFavoritesModal();
+        });
+    });
+    
+    // Обработчик для кнопки сохранения перемещенных избранных
+    document.getElementById("saveMovedFavorites").addEventListener("click", function() {
+        moveFavoritesToCategory();
+    });
+    
+    // Обработчик для очистки лога при закрытии модального окна описания
+    document.getElementById("descriptionModal").addEventListener("hidden.bs.modal", function (event) {
+        // Удаляем контейнер с логом
+        const logContainer = document.getElementById("aiDescriptionLog");
+        if (logContainer) {
+            logContainer.remove();
+        }
+    });
+    
+    // Обработчик для кнопки сохранения категории
+    document.getElementById("saveCategory").addEventListener("click", function() {
+        const path = document.getElementById("programPath").value;
+        const currentCategory = document.getElementById("currentCategory").value;
+        const select = document.getElementById("categorySelect");
+        const newCategoryInput = document.getElementById("newCategoryInput").value.trim();
+        const saveBtn = this;
+        
+        // Сохраняем текущий поисковый запрос
+        const searchValue = document.getElementById("searchInput").value;
+        
+        // Определяем, какая категория выбрана
+        let newCategory = newCategoryInput !== "" ? newCategoryInput : select.value;
+        
+        // Если категория не изменилась, то ничего не делаем
+        if (newCategory === currentCategory) {
+            bootstrap.Modal.getInstance(document.getElementById("categoryModal")).hide();
+            return;
+        }
+        
+        // Показываем индикатор загрузки
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Сохранение...';
+        saveBtn.disabled = true;
+        
+        console.log(`Отправка запроса на изменение категории для пути "${path}" с "${currentCategory}" на "${newCategory}"`);
+        
+        // Отправляем запрос на сервер
+        fetch(`/change_category?path=${encodeURIComponent(path)}&category=${encodeURIComponent(newCategory)}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Сервер вернул ${response.status}: ${response.statusText}`);
+                }
+                return response.text();
+            })
+            .then(data => {
+                console.log("Ответ сервера:", data);
+                showToast("Категория изменена", data);
+                
+                // Сохраняем поисковый запрос в sessionStorage перед перезагрузкой
+                if (searchValue) {
+                    sessionStorage.setItem('lastSearchQuery', searchValue);
+                }
+                
+                // Скрываем модальное окно
+                bootstrap.Modal.getInstance(document.getElementById("categoryModal")).hide();
+                // Перезагружаем страницу
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            })
+            .catch(error => {
+                console.error("Ошибка при изменении категории:", error);
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+                showToast("Ошибка", "Не удалось изменить категорию: " + error, "danger");
+            });
+    });
+    
+    // Обработчик для кнопки сохранения нового имени категории
+    document.getElementById("saveRenamedCategory").addEventListener("click", function() {
+        const originalCategory = document.getElementById("originalCategoryName").value;
+        const newCategoryName = document.getElementById("newCategoryName").value.trim();
+        
+        if (!newCategoryName) {
+            showToast("Ошибка", "Название категории не может быть пустым", "danger");
+            return;
+        }
+        
+        if (newCategoryName === originalCategory) {
+            bootstrap.Modal.getInstance(document.getElementById("renameCategoryModal")).hide();
+            return;
+        }
+        
+        // Отправляем запрос на сервер для переименования категории
+        fetch(`/rename_category?old_category=${encodeURIComponent(originalCategory)}&new_category=${encodeURIComponent(newCategoryName)}`)
+            .then(response => response.text())
+            .then(data => {
+                console.log(data);
+                showToast("Категория переименована", data);
+                // Скрываем модальное окно
+                bootstrap.Modal.getInstance(document.getElementById("renameCategoryModal")).hide();
+                // Перезагружаем страницу
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                showToast("Ошибка", "Не удалось переименовать категорию: " + error, "danger");
+            });
+    });
+    
+    // Обработчик для кнопки сохранения описания
+    document.getElementById("saveDescription").addEventListener("click", function() {
+        const path = document.getElementById("programPathDescription").value;
+        // Используем пустую строку, если описание пустое
+        const newDescription = document.getElementById("descriptionInput").value || "";
+        
+        // Сохраняем текущий поисковый запрос
+        const searchValue = document.getElementById("searchInput").value;
+        
+        console.log("Сохраняем новое описание для программы:", path);
+        console.log("Длина описания:", newDescription.length);
+        
+        // Отправляем запрос на сервер
+        fetch(`/change_description?path=${encodeURIComponent(path)}&description=${encodeURIComponent(newDescription)}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+                return response.text();
+            })
+            .then(data => {
+                console.log("Ответ сервера:", data);
+                showToast("Описание изменено", data);
+                
+                // Сохраняем поисковый запрос в sessionStorage перед перезагрузкой
+                if (searchValue) {
+                    sessionStorage.setItem('lastSearchQuery', searchValue);
+                }
+                
+                // Скрываем модальное окно
+                bootstrap.Modal.getInstance(document.getElementById("descriptionModal")).hide();
+                // Перезагружаем страницу
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                showToast("Ошибка", "Не удалось изменить описание: " + error, "danger");
+            });
+    });
+
+    // Обработчик для кнопки получения автоматического описания в модальном окне
+    document.getElementById("getAIDescriptionBtn").addEventListener("click", function() {
+        const path = document.getElementById("programPathDescription").value;
+        const descriptionInput = document.getElementById("descriptionInput");
+        const spinner = document.getElementById("aiDescriptionSpinner");
+        
+        // Показываем индикатор загрузки
+        spinner.style.display = "inline-block";
+        this.disabled = true;
+        
+        console.log("Запрашиваем информацию о файле:", path);
+        
+        // Проверяем, не является ли путь уже закодированным
+        let processedPath = path;
+        try {
+            // Если путь содержит %, вероятно, он уже закодирован
+            if (path.includes('%')) {
+                // Пытаемся декодировать и затем кодировать снова, чтобы избежать двойного кодирования
+                processedPath = decodeURIComponent(path);
+            }
+        } catch (e) {
+            console.warn("Ошибка декодирования пути:", e);
+            // Если ошибка декодирования, используем путь как есть
+        }
+        
+        // Корректно кодируем путь и логируем
+        const encodedPath = encodeURIComponent(processedPath);
+        console.log("Исходный путь:", path);
+        console.log("Обработанный путь:", processedPath);
+        console.log("Закодированный путь:", encodedPath);
+        
+        // Отправляем запрос на сервер для получения информации о файле
+        fetch(`/get_file_info?path=${encodedPath}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Ошибка сервера: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Получен ответ:", data);
+                
+                if (data.success && data.file_info) {
+                    // Получаем текущее описание
+                    const currentDescription = descriptionInput.value.trim();
+                    
+                    // Добавляем информацию о файле к текущему описанию с переносом строки после заголовка
+                    const newDescription = currentDescription + 
+                        (currentDescription ? "\n\n" : "") + 
+                        "Информация о файле:\n" + data.file_info;
+                    
+                    // Обновляем текст в поле описания
+                    descriptionInput.value = newDescription;
+                    
+                    // Анимируем выделение, чтобы пользователь заметил изменение
+                    descriptionInput.classList.add("border-success");
+                    setTimeout(() => {
+                        descriptionInput.classList.remove("border-success");
+                    }, 1500);
+                    
+                    showToast("Успех", "Информация о файле успешно добавлена к описанию", "success");
+                } else {
+                    showToast("Предупреждение", data.error || "Не удалось получить информацию о файле", "warning");
+                }
+            })
+            .catch(error => {
+                console.error("Ошибка:", error);
+                showToast("Ошибка", "Не удалось получить информацию о файле: " + error, "danger");
+            })
+            .finally(() => {
+                // Скрываем индикатор загрузки и разблокируем кнопку
+                spinner.style.display = "none";
+                this.disabled = false;
+            });
+    });
+    
+    // Инициализируем отслеживание категорий сразу после загрузки
+    setTimeout(fixActiveCategoryOnScroll, 300);
+    
+    // Обработчик изменения активности в ScrollSpy
+    document.body.addEventListener('activate.bs.scrollspy', function(e) {
+        // При активации нового раздела через ScrollSpy
+        const targetId = e.relatedTarget;
+        console.log('ScrollSpy активировал:', targetId);
+        
+        // Проверяем через 200 мс, не исчезла ли активация для больших разделов
+        setTimeout(() => {
+            const activeLink = document.querySelector('#category-nav .nav-link.active');
+            if (!activeLink) {
+                // Если активная ссылка исчезла, восстанавливаем ее вручную
+                fixActiveCategoryOnScroll();
+            }
+        }, 200);
+    });
+});
+
 function toggleHidden(path, event) {
-    const btn = event.currentTarget;
-    const restoreBtn = prepareButton(btn);
+    const btn = event.currentTarget;  // Используем currentTarget вместо closest
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    btn.disabled = true;
     
-    // Определяем, находится ли программа в избранном
-    const card = btn.closest('.program-card');
-    const isFavorite = card && card.getAttribute('data-category') && 
-                      card.getAttribute('data-category').toLowerCase() === "избранное";
+    // Проверяем, не является ли путь уже закодированным
+    try {
+        // Если путь содержит %, вероятно, он уже закодирован
+        if (path.includes('%')) {
+            // Пытаемся декодировать и затем кодировать снова, чтобы избежать двойного кодирования
+            path = decodeURIComponent(path);
+        }
+    } catch (e) {
+        console.warn("Ошибка декодирования пути:", e);
+        // Если ошибка декодирования, используем путь как есть
+    }
     
-    console.log("Переключение статуса скрытия для программы:", path);
-    console.log("Программа в избранном:", isFavorite ? "Да" : "Нет");
+    // Сохраняем текущий поисковый запрос
+    const searchValue = document.getElementById("searchInput").value;
     
-    // Обрабатываем путь через общую функцию
-    path = processPath(path);
-    
-    // Отправляем запрос
+    // Корректно кодируем путь и логируем
     const encodedPath = encodeURIComponent(path);
     console.log("Отправка запроса toggle_hidden для пути:", path);
     console.log("Закодированный путь:", encodedPath);
     
-    // Создаем URL с дополнительным параметром для избранного
-    const url = `/toggle_hidden?path=${encodedPath}${isFavorite ? '&favorite=true' : ''}`;
-    
-    // Если программа в избранном, принудительно выполняем дополнительный запрос
-    // для гарантированного сохранения статуса скрытия
-    if (isFavorite) {
-        // Сначала отправляем запрос на изменение статуса скрытия
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Сервер вернул ${response.status}: ${response.statusText}`);
-                }
-                return response.text();
-            })
-            .then(data => {
-                console.log("Первый ответ сервера:", data);
-                
-                // Делаем дополнительный запрос для гарантированного сохранения статуса
-                return fetch(`/save_changes?force=true`);
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Сервер вернул ${response.status}: ${response.statusText}`);
-                }
-                return response.text();
-            })
-            .then(data => {
-                console.log("Результат принудительного сохранения:", data);
-                showToast("Статус скрытия изменен", "Изменения сохранены принудительно для избранного");
-                // Перезагрузить страницу после изменения статуса
-                window.location.reload();
-            })
-            .catch(error => {
-                restoreBtn();
-                console.error("Ошибка:", error);
-                showToast("Ошибка", "Не удалось изменить статус скрытия: " + error, "danger");
-            });
-    } else {
-        // Для обычных программ используем стандартный подход
-        sendRequest(
-            url, 
-            (data) => {
-                showToast("Статус скрытия изменен", data);
-                // Перезагрузить страницу после изменения статуса
-                window.location.reload();
-            },
-            (error) => {
-                restoreBtn();
-                showToast("Ошибка", "Не удалось изменить статус скрытия: " + error, "danger");
-            },
-            false // не перезагружать страницу - мы сами вызываем reload
-        );
-    }
+    fetch("/toggle_hidden?path=" + encodedPath)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            return response.text();
+        })
+        .then(data => {
+            console.log("Ответ сервера:", data);
+            showToast("Статус скрытия изменен", data);
+            
+            // Сохраняем поисковый запрос в sessionStorage перед перезагрузкой
+            if (searchValue) {
+                sessionStorage.setItem('lastSearchQuery', searchValue);
+            }
+            
+            // Перезагрузить страницу после изменения статуса
+            window.location.reload();
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+            showToast("Ошибка", "Не удалось изменить статус скрытия: " + error, "danger");
+        });
 }

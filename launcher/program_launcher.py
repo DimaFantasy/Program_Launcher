@@ -40,22 +40,38 @@ def launch_program(program_path, base_directory=None):
     try:
         # Decode URL-encoded path
         program_path = urllib.parse.unquote(program_path)
-        # Determine if path is absolute or relative
+        
+        # Проверяем, является ли путь абсолютным или относительным
         if os.path.isabs(program_path):
             full_path = os.path.normpath(program_path)
         else:
-            # Используем переданную базовую директорию или глобальную
+            # Сначала проверяем, существует ли путь относительно base_directory
             base_dir = base_directory or BASE_DIRECTORY
-            if not base_dir:
-                return Response("Ошибка: не задана базовая директория", content_type='text/plain; charset=utf-8')
-            full_path = os.path.normpath(os.path.join(base_dir, program_path))
+            if base_dir:
+                test_path = os.path.normpath(os.path.join(base_dir, program_path))
+                if os.path.exists(test_path):
+                    full_path = test_path
+                else:
+                    # Если файл не существует относительно base_directory, 
+                    # проверяем его относительно текущей директории
+                    current_dir = os.getcwd()
+                    full_path = os.path.normpath(os.path.join(current_dir, program_path))
+            else:
+                # Если base_directory не задана, используем текущую директорию
+                current_dir = os.getcwd()
+                full_path = os.path.normpath(os.path.join(current_dir, program_path))
         
         print(f"Attempting to launch: {full_path}")
         
+        # Проверяем существование файла
         if not os.path.exists(full_path):
-            result = f"Ошибка: файл {full_path} не найден"
-            print(result)
-            return Response(result, content_type='text/plain; charset=utf-8')
+            # Если файл не существует, проверяем, может это прямой абсолютный путь
+            if os.path.exists(program_path):
+                full_path = program_path
+            else:
+                result = f"Ошибка: файл {full_path} не найден"
+                print(result)
+                return Response(result, content_type='text/plain; charset=utf-8')
         
         # Определяем расширение файла
         file_extension = os.path.splitext(full_path)[1].lower()
@@ -127,22 +143,45 @@ def handle_open_folder():
     try:
         # Decode URL-encoded path
         program_path = urllib.parse.unquote(program_path)
-        # Determine if path is absolute or relative
+        
+        # Проверяем, является ли путь абсолютным или относительным
         if os.path.isabs(program_path):
             full_path = os.path.normpath(program_path)
         else:
-            # Проверяем наличие базовой директории
-            if not BASE_DIRECTORY:
-                return Response("Ошибка: не задана базовая директория", content_type='text/plain; charset=utf-8')
-            full_path = os.path.normpath(os.path.join(BASE_DIRECTORY, program_path))
+            # Сначала проверяем, существует ли путь относительно BASE_DIRECTORY
+            if BASE_DIRECTORY:
+                test_path = os.path.normpath(os.path.join(BASE_DIRECTORY, program_path))
+                if os.path.exists(test_path) or os.path.exists(os.path.dirname(test_path)):
+                    full_path = test_path
+                else:
+                    # Если путь не существует относительно BASE_DIRECTORY, 
+                    # проверяем относительно текущей директории
+                    current_dir = os.getcwd()
+                    full_path = os.path.normpath(os.path.join(current_dir, program_path))
+            else:
+                # Если BASE_DIRECTORY не задана, используем текущую директорию
+                current_dir = os.getcwd()
+                full_path = os.path.normpath(os.path.join(current_dir, program_path))
         
         folder_path = os.path.dirname(full_path)
         print(f"Attempting to open folder: {folder_path}")
         
+        # Проверяем существование папки
         if not os.path.exists(folder_path):
-            result = f"Ошибка: папка {folder_path} не найдена"
-            print(result)
-            return Response(result, content_type='text/plain; charset=utf-8')
+            # Если папка не существует, проверяем, может это путь из list.txt, который не относительный
+            # Если в list.txt хранятся абсолютные пути, попробуем использовать прямой путь
+            if not os.path.isabs(program_path):
+                direct_folder = os.path.dirname(program_path)
+                if os.path.exists(direct_folder):
+                    folder_path = direct_folder
+                else:
+                    result = f"Ошибка: папка {folder_path} не найдена"
+                    print(result)
+                    return Response(result, content_type='text/plain; charset=utf-8')
+            else:
+                result = f"Ошибка: папка {folder_path} не найдена"
+                print(result)
+                return Response(result, content_type='text/plain; charset=utf-8')
         
         # Открытие папки с помощью explorer
         subprocess.Popen(f'explorer "{folder_path}"')

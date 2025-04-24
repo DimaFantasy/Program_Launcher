@@ -43,6 +43,17 @@ def load_program_list(program_class=None, base_directory=None):
             print(f"Ошибка при создании файла list.txt: {str(e)}")
         return [], {}
     
+    # Импортируем re здесь для использования регулярных выражений
+    import re
+    
+    # Регулярные выражения для проверки форматов строк
+    # Формат с маркерами: путь||+||v||категория||описание или путь||*||h||категория||описание
+    re_full_format = re.compile(r'^(.+?)\|\|(\+|\*)\|\|(v|h)\|\|(.+?)\|\|(.*)$')
+    # Старый формат: путь||категория||описание
+    re_old_format = re.compile(r'^(.+?)\|\|(.+?)\|\|(.*)$')
+    # Простой формат: только путь
+    re_path_only = re.compile(r'^([^|]+)$')
+
     # Пробуем разные кодировки
     for encoding in ['utf-8-sig', 'utf-8', 'cp1251', 'utf-16']:
         try:
@@ -54,46 +65,139 @@ def load_program_list(program_class=None, base_directory=None):
                         continue
                     
                     try:
-                        # Определяем тип разделителя для избранного
+                        # Инициализация дефолтных значений
                         is_favorite = False
+                        is_hidden = False
+                        path = ""
+                        category = "Программы"  # Дефолтная категория
+                        description = "Найдена в списке"  # Дефолтное описание
                         
-                        # Ищем разделители с учетом пробелов до и после
-                        # Обрабатываем случаи где может быть любое количество пробелов до и после ||
-                        if "||*||" in line:
-                            is_favorite = True
-                            parts = line.split("||*||", 1)
-                            path = parts[0].strip()
-                            rest = parts[1].strip() if len(parts) > 1 else ""
-                        elif "||-||" in line:
-                            parts = line.split("||-||", 1)
-                            path = parts[0].strip()
-                            rest = parts[1].strip() if len(parts) > 1 else ""
+                        # Проверяем строку на соответствие форматам с помощью регулярных выражений
+                        match_full = re_full_format.match(line)
+                        match_old = re_old_format.match(line)
+                        match_path = re_path_only.match(line)
+                        
+                        if match_full:
+                            # Полный формат с маркерами
+                            path = match_full.group(1).strip()
+                            is_favorite = match_full.group(2) == '*'
+                            is_hidden = match_full.group(3) == 'h'
+                            category = match_full.group(4).strip()
+                            description = match_full.group(5).strip()
+                            print(f"Найдена программа в полном формате: {path}, Избранное: {is_favorite}, Скрыта: {is_hidden}")
+                        
+                        elif match_path:
+                            # Простой формат: только путь к программе
+                            path = match_path.group(1).strip()
+                            print(f"Найдена программа в простом формате: {path}")
+                            
+                            # Определяем категорию на основе корневой папки
+                            category = extract_category_from_path(path, base_dir)
+                            print(f"Определена категория из пути: {category}")
+                            
+                            # Устанавливаем дефолтные значения
+                            description = "Найдена в списке"
+                            is_favorite = False
+                            is_hidden = False
+                        
+                        elif match_old:
+                            # Старый формат: путь||категория||описание
+                            path = match_old.group(1).strip()
+                            category = match_old.group(2).strip()
+                            description = match_old.group(3).strip()
+                            print(f"Найдена программа в старом формате: {path}")
+                            
+                            # Проверяем, нет ли в строке дополнительных маркеров
+                            if "||h||" in line:
+                                is_hidden = True
+                            elif "||v||" in line:
+                                is_hidden = False
+                            
+                            if "||*||" in line:
+                                is_favorite = True
+                            elif "||+||" in line:
+                                is_favorite = False
+                        
                         else:
-                            # Поиск стандартного разделителя '||' с учетом пробелов
-                            import re
-                            matches = re.split(r'\s*\|\|\s*', line, 2)  # Разбиваем по || с любым количеством пробелов вокруг
+                            # Если строка не соответствует ни одному из форматов,
+                            # пробуем старую логику парсинга для обратной совместимости
+                            print(f"Строка {line_num} не соответствует ни одному формату, пробуем старую логику: {line}")
                             
-                            if len(matches) < 3:
-                                print(f"Предупреждение: строка {line_num} имеет неверный формат: {line}")
-                                continue
-                                
-                            path = matches[0].strip()
-                            category = matches[1].strip()
-                            description = matches[2].strip() if len(matches) > 2 else "Без описания"
-                            rest = None
-                        
-                        # Обрабатываем новый формат (с ||*|| или ||-||)
-                        if rest is not None:
-                            # Разделяем оставшуюся часть по разделителю '||' с учетом пробелов
-                            import re
-                            parts = re.split(r'\s*\|\|\s*', rest, 1)  # Разбиваем по || с любым количеством пробелов
-                            
-                            if len(parts) > 1:
-                                category = parts[0].strip()
-                                description = parts[1].strip()
+                            # Стандартный формат с разделителями
+                            if "||*||" in line:
+                                is_favorite = True
+                                parts = line.split("||*||", 1)
+                                path = parts[0].strip()
+                                rest = parts[1].strip() if len(parts) > 1 else ""
+                            elif "||+||" in line:
+                                # Обычная программа (не избранная)
+                                parts = line.split("||+||", 1)
+                                path = parts[0].strip()
+                                rest = parts[1].strip() if len(parts) > 1 else ""
+                            elif "||||" in line:
+                                # Поддержка старого формата маркера обычных программ
+                                parts = line.split("||||", 1)
+                                path = parts[0].strip()
+                                rest = parts[1].strip() if len(parts) > 1 else ""
                             else:
-                                category = rest.strip()
-                                description = "Без описания"
+                                # Старый формат или другой разделитель
+                                # Проверка на старый формат
+                                if "||h||" in line:
+                                    is_hidden = True
+                                    parts = line.split("||h||", 1)
+                                    path = parts[0].strip()
+                                    rest = parts[1].strip() if len(parts) > 1 else ""
+                                elif "||-||" in line:
+                                    parts = line.split("||-||", 1)
+                                    path = parts[0].strip()
+                                    rest = parts[1].strip() if len(parts) > 1 else ""
+                                else:
+                                    # Поиск стандартного разделителя '||' с учетом пробелов
+                                    matches = re.split(r'\s*\|\|\s*', line, 2)  # Разбиваем по || с любым количеством пробелов вокруг
+                                    
+                                    if len(matches) < 3:
+                                        print(f"Предупреждение: строка {line_num} имеет неверный формат: {line}")
+                                        continue
+                                        
+                                    path = matches[0].strip()
+                                    category = matches[1].strip()
+                                    description = matches[2].strip() if len(matches) > 2 else "Без описания"
+                                    rest = None
+                                
+                                # Проверка на маркер видимости в rest
+                                if 'rest' in locals() and rest is not None:
+                                    if "||h||" in rest:
+                                        is_hidden = True
+                                        parts = rest.split("||h||", 1)
+                                        rest = parts[1].strip() if parts and len(parts) > 1 else ""
+                                    elif "||v||" in rest:
+                                        # Видимая программа
+                                        parts = rest.split("||v||", 1)
+                                        rest = parts[1].strip() if parts and len(parts) > 1 else ""
+                                    
+                                    # Разделяем категорию и описание
+                                    if rest:
+                                        parts = re.split(r'\s*\|\|\s*', rest, 1)  # Разбиваем по || с любым количеством пробелов
+                                        
+                                        if len(parts) > 1:
+                                            category = parts[0].strip()
+                                            description = parts[1].strip()
+                                        else:
+                                            category = rest.strip()
+                                            description = "Без описания"
+                            
+                            # Выводим отладочную информацию
+                            print(f"После старой логики: Программа: {path}, Избранное: {is_favorite}, Скрыта: {is_hidden}, Категория: {category}")
+
+                        # Проверяем, что путь к программе не пустой
+                        if not path:
+                            print(f"Предупреждение: строка {line_num} имеет пустой путь: {line}")
+                            continue
+                        
+                        # Проверяем существование файла
+                        file_exists = os.path.exists(path)
+                        if not file_exists:
+                            print(f"Предупреждение: файл не существует: {path}")
                         
                         # Восстанавливаем переносы строк в описании
                         description = description.replace('\\n', '\n')
@@ -103,9 +207,10 @@ def load_program_list(program_class=None, base_directory=None):
                         
                         if program_class:
                             # Создаем объект с экранированной категорией и НЕэкранированным описанием
-                            program = program_class(path, category_safe, description, is_favorite)
+                            program = program_class(path, category_safe, description, is_favorite, is_hidden)
                             program.original_category = category
                             program.original_description = description # Сохраняем оригинальное описание
+                            program.file_exists = file_exists  # Добавляем информацию о существовании файла
                             programs.append(program)
                         else:
                             # Создаем словарь с экранированными и оригинальными значениями
@@ -114,8 +219,10 @@ def load_program_list(program_class=None, base_directory=None):
                                 'category': category_safe,
                                 'description': description,
                                 'is_favorite': is_favorite,
+                                'is_hidden': is_hidden,
                                 'original_category': category,
-                                'original_description': description
+                                'original_description': description,
+                                'file_exists': file_exists  # Добавляем информацию о существовании файла
                             })
                         
                         # Собираем уникальные категории для иконок (используем оригинальные значения)
@@ -125,6 +232,8 @@ def load_program_list(program_class=None, base_directory=None):
                     except Exception as e:
                         print(f"Ошибка при обработке строки {line_num}: {line}")
                         print(f"Ошибка: {str(e)}")
+                        import traceback
+                        traceback.print_exc()
                         continue
             
             print(f"Загружено {len(programs)} программ из list.txt")
@@ -150,7 +259,7 @@ def save_program_list(programs, base_directory=None):
     list_path = os.path.join(base_dir, 'list.txt')
     
     try:
-        print(f"Сохранение {len(programs)} программ в {list_path}") # Добавлено логирование
+        print(f"Сохранение {len(programs)} программ в {list_path}")
 
         with open(list_path, 'w', encoding='utf-8') as f:
             for program in programs:
@@ -161,12 +270,14 @@ def save_program_list(programs, base_directory=None):
                     category = program.get('original_category', program['category']).strip()
                     description = program.get('original_description', program['description'])
                     is_favorite = program.get('is_favorite', False)
+                    is_hidden = program.get('is_hidden', False)
                 else:
                     path = program.path.strip()
                     # Используем оригинальные значения, если они есть
                     category = getattr(program, 'original_category', program.category).strip()
                     description = getattr(program, 'original_description', program.description)
                     is_favorite = getattr(program, 'is_favorite', False)
+                    is_hidden = getattr(program, 'is_hidden', False)
                 
                 # Если категория или описание были экранированы, восстанавливаем исходные значения
                 category = unescape_html(category)
@@ -178,18 +289,24 @@ def save_program_list(programs, base_directory=None):
                 # Но убираем пробелы в начале
                 description = description.lstrip()
                 
-                # Используем новый формат маркировки избранного
-                favorite_mark = "||*||" if is_favorite else "||-||"
                 # Корректное экранирование переносов строк для записи в файл
                 escaped_description = description.replace('\r', '').replace('\n', '\\n') 
                 
-                # Используем точный формат без лишних пробелов: path||*||category||description
-                f.write(f"{path}{favorite_mark}{category}||{escaped_description}\n")
+                # Формируем строку в правильном формате
+                favorite_mark = "*" if is_favorite else "+"
+                visibility_mark = "h" if is_hidden else "v"
+                
+                # Создаем строку в корректном формате без двойных разделителей
+                final_string = f"{path}||{favorite_mark}||{visibility_mark}||{category}||{escaped_description}"
+                
+                f.write(final_string + "\n")
         
         print(f"Список программ успешно сохранен в {list_path}")
         return True
     except Exception as e:
         print(f"Ошибка при сохранении списка программ: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def rename_category(programs, old_category, new_category, base_directory):
@@ -321,3 +438,28 @@ def change_file_category(programs, program_path, new_category, base_directory):
         import traceback
         traceback.print_exc()
         return False, programs
+
+def extract_category_from_path(file_path, root_directory):
+    """
+    Извлекает категорию из пути к файлу.
+    Категория - это первая папка с конца в пути к файлу относительно корневой директории.
+    Если файл находится в корне, возвращает "Программы".
+    """
+    # Очищаем пути от пробелов
+    file_path = file_path.strip() if file_path else ""
+    root_directory = root_directory.strip() if root_directory else ""
+    
+    # Получаем относительный путь от корневой директории
+    try:
+        rel_path = os.path.relpath(file_path, root_directory)
+        path_parts = rel_path.split(os.sep)
+        
+        # Если путь содержит более одного элемента (не в корне)
+        if len(path_parts) > 1:
+            # Берем первую папку из пути (не считая имени файла) и очищаем от пробелов
+            return path_parts[0].strip()
+    except Exception as e:
+        print(f"Ошибка при определении категории из пути: {e}")
+    
+    # Если файл в корне или произошла ошибка, возвращаем "Программы"
+    return "Программы"
