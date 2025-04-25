@@ -368,3 +368,28 @@ def register_routes():
                 return Response("Ошибка при сохранении изменений", content_type='text/plain; charset=utf-8')
         except Exception as e:
             return handle_api_error(e, "при принудительном сохранении изменений")
+
+    @app.route('/shutdown')
+    def api_shutdown():
+        """Останавливает сервер и закрывает приложение"""
+        try:
+            import threading
+            import os
+            
+            # Показываем сообщение
+            print("Получен запрос на завершение работы сервера")
+            
+            # Функция для принудительного завершения приложения с небольшой задержкой
+            def shutdown_server():
+                # Ждем небольшую задержку, чтобы запрос успел отправить ответ
+                import time
+                time.sleep(1)
+                # Принудительно завершаем процесс
+                os._exit(0)
+            
+            # Запускаем поток для завершения работы сервера
+            threading.Thread(target=shutdown_server, daemon=True).start()
+            
+            return Response("Сервер останавливается...", content_type='text/plain; charset=utf-8')
+        except Exception as e:
+            return handle_api_error(e, "при остановке сервера")

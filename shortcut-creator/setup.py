@@ -2,23 +2,28 @@ import os
 import sys
 import winreg  # Встроенный модуль Python, не требует установки
 
+# Вычисление путей относительно расположения скрипта
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Родительская директория (Program_Launcher)
+SCRIPT_PATH = os.path.join(SCRIPT_DIR, "launcher.py")  # Путь к launcher.py
+ICON_PATH = os.path.join(SCRIPT_DIR, "launcher", "template", "icons", "launcher.ico")  # Путь к иконке
+
+# Абсолютные пути для записи в реестр (с двойными обратными слешами)
+SCRIPT_PATH_REG = SCRIPT_PATH.replace("\\", "\\\\")
+ICON_PATH_REG = ICON_PATH.replace("\\", "\\\\")
+
 # Константы для установки
 MENU_NAME = "Создать ярлык Program Launcher"
 COMMAND_KEY = "Program_Launcher_SC"  # Ключ из reg-файла
-PYTHON_CMD = "python.exe"  # Использование python.exe без пути, как в install.reg
-SCRIPT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), "launcher.py"))
-ICON_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), "launcher", "template", "icons", "launcher.ico"))
 
 def install_context_menu():
     """Регистрирует контекстное меню для папок в проводнике Windows"""
     try:
-        print(f"Путь к Python: {PYTHON_CMD}")
         print(f"Путь к скрипту: {SCRIPT_PATH}")
         print(f"Путь к иконке: {ICON_PATH}")
         
-        # Команды для запуска скрипта
-        directory_command = f'"{PYTHON_CMD}" "{SCRIPT_PATH}" "%1"'
-        background_command = f'"{PYTHON_CMD}" "{SCRIPT_PATH}" "%V"'
+        # Команды для запуска скрипта, точно как в install.reg
+        directory_command = f'cmd.exe /c python "{SCRIPT_PATH}" "%1"'
+        background_command = f'cmd.exe /c python "{SCRIPT_PATH}" "%V"'
         
         # Удаляем старые ключи перед установкой
         remove_context_menu()
@@ -30,7 +35,7 @@ def install_context_menu():
             # Создаем основной ключ
             dir_key = winreg.CreateKey(winreg.HKEY_CLASSES_ROOT, f"Directory\\shell\\{COMMAND_KEY}")
             winreg.SetValueEx(dir_key, "", 0, winreg.REG_SZ, MENU_NAME)
-            winreg.SetValueEx(dir_key, "Icon", 0, winreg.REG_SZ, f"{ICON_PATH},0")
+            winreg.SetValueEx(dir_key, "Icon", 0, winreg.REG_SZ, f"{ICON_PATH_REG},0")
             
             # Создаем ключ command
             dir_cmd_key = winreg.CreateKey(winreg.HKEY_CLASSES_ROOT, f"Directory\\shell\\{COMMAND_KEY}\\command")
@@ -48,7 +53,7 @@ def install_context_menu():
             # Создаем основной ключ
             bg_key = winreg.CreateKey(winreg.HKEY_CLASSES_ROOT, f"Directory\\Background\\shell\\{COMMAND_KEY}")
             winreg.SetValueEx(bg_key, "", 0, winreg.REG_SZ, MENU_NAME)
-            winreg.SetValueEx(bg_key, "Icon", 0, winreg.REG_SZ, f"{ICON_PATH},0")
+            winreg.SetValueEx(bg_key, "Icon", 0, winreg.REG_SZ, f"{ICON_PATH_REG},0")
             
             # Создаем ключ command
             bg_cmd_key = winreg.CreateKey(winreg.HKEY_CLASSES_ROOT, f"Directory\\Background\\shell\\{COMMAND_KEY}\\command")

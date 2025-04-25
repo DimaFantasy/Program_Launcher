@@ -1036,7 +1036,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Инициализация переключателя темы
     initThemeSwitcher();
     
-    // Обработчик для чекбокса "Показать скрытые"
+    // Обработчик для чекбокса "Скрытые"
     const showHiddenCheck = document.getElementById("showHiddenCheck");
     if (showHiddenCheck) {
         // Проверяем, есть ли сохраненный статус в localStorage
@@ -1051,11 +1051,11 @@ document.addEventListener("DOMContentLoaded", function() {
             if (this.checked) {
                 document.body.classList.add('show-hidden');
                 localStorage.setItem('showHidden', 'true');
-                console.log('Показать скрытые программы: включено');
+                console.log('Скрытые программы: включено');
             } else {
                 document.body.classList.remove('show-hidden');
                 localStorage.setItem('showHidden', 'false');
-                console.log('Показать скрытые программы: выключено');
+                console.log('Скрытые программы: выключено');
             }
         });
     }
@@ -1432,4 +1432,41 @@ function toggleHidden(path, event) {
             false // не перезагружать страницу - мы сами вызываем reload
         );
     }
+}
+
+// Функция для закрытия приложения
+function closeApplication() {
+    // Показываем уведомление пользователю
+    showToast("Завершение работы", "Приложение закрывается...", "info");
+    
+    // Делаем запрос на сервер для завершения работы
+    fetch('/shutdown')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Сервер вернул ${response.status}: ${response.statusText}`);
+            }
+            return response.text();
+        })
+        .then(data => {
+            console.log("Ответ сервера:", data);
+            // Дополнительно закрываем вкладку браузера
+            window.close();
+            
+            // Если окно не закрылось через window.close(), показываем сообщение
+            setTimeout(() => {
+                showToast("Информация", "Сервер остановлен. Можете закрыть это окно браузера.", "warning");
+                // Меняем текст кнопки закрытия
+                const closeBtn = document.getElementById("btnClose");
+                if (closeBtn) {
+                    closeBtn.innerHTML = '<i class="bi bi-check-circle"></i> Сервер остановлен';
+                    closeBtn.disabled = true;
+                    closeBtn.classList.remove("btn-danger");
+                    closeBtn.classList.add("btn-secondary");
+                }
+            }, 2000);
+        })
+        .catch(error => {
+            console.error("Ошибка при закрытии приложения:", error);
+            showToast("Ошибка", "Не удалось закрыть приложение: " + error, "danger");
+        });
 }

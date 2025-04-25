@@ -388,7 +388,7 @@ body.dark-theme .theme-icon-light {
     opacity: 0.7;
 }
 
-/* Стиль для чекбокса "Показать скрытые" */
+/* Стиль для чекбокса "Скрытые" */
 #showHiddenCheck {
     cursor: pointer;
 }
@@ -407,7 +407,7 @@ body.show-hidden .program-card[data-hidden="true"] {
     border: 1px dashed #17a2b8;
 }
 
-/* Стиль для контейнера "Показать скрытые" */
+/* Стиль для контейнера "Скрытые" */
 .show-hidden-container {
     background: linear-gradient(to right, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.05));
     border-radius: 8px;
@@ -425,7 +425,7 @@ body.show-hidden .program-card[data-hidden="true"] {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* Стиль для чекбокса "Показать скрытые" */
+/* Стиль для чекбокса "Скрытые" */
 #showHiddenCheck {
     cursor: pointer;
     width: 18px;
