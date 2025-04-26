@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"="width=device-width, initial-scale=1.0">
     <title>Programs-2k10 Launcher</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -276,6 +276,56 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="cancelScanningBtn">Отмена</button>
                 <button type="button" class="btn btn-primary" id="finishScanningBtn" disabled>Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Универсальное модальное окно для работы со списками программ -->
+<div class="modal fade" id="programListModal" tabindex="-1" aria-labelledby="programListModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="programListModalLabel">Список программ</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="listOperationType" value="">
+                <input type="hidden" id="listOperationTarget" value="">
+                
+                <div class="alert alert-info mb-3" id="programListModalInfo">
+                    Выберите программы из списка
+                </div>
+                
+                <div class="mb-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="programListSearchInput" placeholder="Поиск по списку...">
+                        <button class="btn btn-outline-secondary" type="button" id="programListSearchClear">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold fs-6 m-0">Список программ</span>
+                            <div class="form-check d-flex align-items-center gap-2 m-0">
+                                <input class="form-check-input m-0" type="checkbox" id="selectAllPrograms">
+                                <label class="form-check-label m-0" for="selectAllPrograms">Выбрать все</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="programListContainer" class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
+                            <!-- Список программ будет добавлен динамически -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="confirmProgramListAction">Подтвердить</button>
             </div>
         </div>
     </div>

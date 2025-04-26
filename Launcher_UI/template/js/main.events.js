@@ -86,34 +86,44 @@ function toggleFavorite(path, event) {
 
 // Функция для удаления программы
 function removeProgram(path, event) {
-    if (!confirm("Вы уверены, что хотите удалить эту программу из списка?")) {
-        return;
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
     }
     
-    const btn = event.target.closest(".btn-remove");
-    const restoreBtn = prepareButton(btn);
+    console.log("Вызвана функция удаления программы:", path);
     
-    // Обрабатываем путь через общую функцию
-    path = processPath(path);
+    // Декодируем путь, если он был URL-кодирован
+    try {
+        // Проверяем, содержит ли путь URL-кодированные символы
+        if (path.includes('%')) {
+            const decodedPath = decodeURIComponent(path);
+            console.log("Путь декодирован:", decodedPath);
+            path = decodedPath;
+        }
+    } catch (error) {
+        console.error("Ошибка при декодировании пути:", error);
+    }
     
-    // Отправляем запрос
-    const encodedPath = encodeURIComponent(path);
-    console.log("Отправка запроса remove_program для пути:", path);
-    console.log("Закодированный путь:", encodedPath);
+    // Передаем путь программы как target при вызове модального окна
+    showProgramListModal(OPERATION_TYPES.REMOVE_PROGRAM, path);
     
-    sendRequest(
-        `/remove_program?path=${encodedPath}`, 
-        (data) => {
-            showToast("Программа удалена", data);
-            // Перезагружаем страницу после удаления
-            window.location.reload();
-        },
-        (error) => {
-            restoreBtn();
-            showToast("Ошибка", "Не удалось удалить программу: " + error, "danger");
-        },
-        false // не перезагружать страницу - мы сами вызываем reload
-    );
+    // Предварительно выбираем программу, на которой была нажата кнопка удаления
+    setTimeout(() => {
+        try {
+            // Находим все чекбоксы и выбираем тот, который соответствует пути
+            const checkboxes = document.querySelectorAll('.program-checkbox');
+            for (let checkbox of checkboxes) {
+                if (checkbox.value === path) {
+                    checkbox.checked = true;
+                    console.log("Предварительно выбрана программа:", path);
+                    break;
+                }
+            }
+        } catch (error) {
+            console.error("Ошибка при предварительном выборе программы:", error);
+        }
+    }, 500); // Даем время на загрузку списка программ
 }
 
 // Функция для получения AI-описания
@@ -202,6 +212,7 @@ function scanPrograms(event) {
     let removedFiles = 0;
     let scanFinished = false;
     let scanningTimer = null;
+    let completionNotificationShown = false; // Флаг для отслеживания показанного уведомления
     
     // Запускаем опрос сервера для получения текущего состояния сканирования
     scanningTimer = setInterval(updateScanProgress, 1000);
@@ -239,6 +250,30 @@ function scanPrograms(event) {
         if (scanningTimer) {
             clearInterval(scanningTimer);
         }
+        
+        // Отправляем запрос на сервер для отмены всех изменений
+        fetch("/cancel_scan_changes")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Ошибка сервера: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(data => {
+                console.log("Результат отмены сканирования:", data);
+                showToast("Сканирование отменено", "Изменения не были сохранены", "info");
+                
+                // Закрываем модальное окно
+                scanningModal.hide();
+            })
+            .catch(error => {
+                console.error("Ошибка при отмене сканирования:", error);
+                showToast("Предупреждение", "Сканирование отменено, но возникла ошибка: " + error, "warning");
+                
+                // Закрываем модальное окно даже при ошибке
+                scanningModal.hide();
+            });
+        
         btn.innerHTML = originalText;
         btn.disabled = false;
     }, { once: true });
@@ -319,21 +354,25 @@ function scanPrograms(event) {
                     btn.innerHTML = originalText;
                     btn.disabled = false;
                     
-                    // Показываем уведомление
-                    let toastMessage = `Найдено ${foundFiles} новых программ`;
-                    if (missingFiles > 0) {
-                        toastMessage += `. Обнаружено ${missingFiles} отсутствующих файлов`;
+                    // Показываем уведомление только если оно еще не было показано
+                    if (!completionNotificationShown) {
+                        completionNotificationShown = true; // Устанавливаем флаг
+                        
+                        let toastMessage = `Найдено ${foundFiles} новых программ`;
+                        if (missingFiles > 0) {
+                            toastMessage += `. Обнаружено ${missingFiles} отсутствующих файлов`;
+                        }
+                        if (removedFiles > 0) {
+                            toastMessage += `, ${removedFiles} файлов будет удалено`;
+                        }
+                        
+                        // Если есть обнаруженные проблемы, добавляем подсказку о сохранении
+                        if (missingFiles > 0 || removedFiles > 0) {
+                            toastMessage += ". Нажмите Сохранить, чтобы применить изменения";
+                        }
+                        
+                        showToast("Сканирование завершено", toastMessage);
                     }
-                    if (removedFiles > 0) {
-                        toastMessage += `, ${removedFiles} файлов будет удалено`;
-                    }
-                    
-                    // Если есть обнаруженные проблемы, добавляем подсказку о сохранении
-                    if (missingFiles > 0 || removedFiles > 0) {
-                        toastMessage += ". Нажмите Сохранить, чтобы применить изменения";
-                    }
-                    
-                    showToast("Сканирование завершено", toastMessage);
                 }
             })
             .catch(error => {
@@ -360,8 +399,11 @@ function scanPrograms(event) {
                 logElement.innerHTML += `\n\nОшибка: ${error.message}`;
                 logElement.scrollTop = logElement.scrollHeight;
                 
-                // Показываем уведомление об ошибке
-                showToast("Ошибка сканирования", error.message, "danger");
+                // Показываем уведомление об ошибке только если оно еще не было показано
+                if (!completionNotificationShown) {
+                    completionNotificationShown = true; // Устанавливаем флаг
+                    showToast("Ошибка сканирования", error.message, "danger");
+                }
             });
     }
     

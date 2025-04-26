@@ -1,17 +1,13 @@
 // Файл с утилитарными функциями (форматирование, проверки и т.п.)
 
-// Функция для безопасного экранирования HTML
-function escapeHtml(text) {
-    if (!text) return '';
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;',
-        '`': '&#096;'
-    };
-    return text.toString().replace(/[&<>"'`]/g, function(m) { return map[m]; });
+// Функция для экранирования HTML-строки
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 // Функция для автоматического сохранения текста поиска перед перезагрузкой страницы

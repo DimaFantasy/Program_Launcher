@@ -344,11 +344,25 @@ def find_executable_files():
                 found_programs.extend(sub_programs)
                 files_walked_count += sub_walked
             elif entry.is_file():
-                # Обрабатываем файлы только в поддиректориях, not в корне BASE_DIRECTORY
+                # Обрабатываем файлы в корне BASE_DIRECTORY
                 files_walked_count += 1
                 scan_status["scanned_files"] = files_walked_count # Обновляем счетчик просмотренных
                 scan_status["last_file"] = entry.name # Показываем текущий файл
-                # Пропускаем файлы в корневой директории (уже обработано выше)
+                
+                # Пропускаем файлы из списка исключений
+                if entry.name in _excluded_filenames:
+                    continue
+
+                # Проверяем расширение файла
+                _, ext = os.path.splitext(entry.name.lower())
+                if ext in _ignore_extensions:
+                    continue
+
+                if ext in _executable_extensions:
+                    # Получаем относительный путь
+                    rel_path = os.path.relpath(entry.path, BASE_DIRECTORY)
+                    rel_path = rel_path.replace('\\\\', '/') # Нормализуем для Windows/Linux
+                    found_programs.append(rel_path)
     except OSError as e:
         print(f"Ошибка при сканировании директории {BASE_DIRECTORY}: {e}")
         scan_status["log"].append(f"Ошибка доступа к {BASE_DIRECTORY}: {e}")
@@ -522,6 +536,24 @@ def apply_scan_changes(save_program_list_func):
 
     print(f"Удалено {removed_count} записей из списка программ.")
     return f"Удалено {removed_count} ложных ссылок на файлы из списка."
+
+def cancel_scan_changes():
+    """Отменяет изменения, обнаруженные при сканировании"""
+    global scan_status
+    
+    # Очищаем список путей для удаления
+    scan_status["missing_paths"] = []
+    
+    # Сбрасываем счетчики
+    scan_status["missing_files"] = 0
+    scan_status["removed_files"] = 0
+    scan_status["missing_after_scan"] = 0
+    
+    # Обновляем лог
+    scan_status["log"].append("Сканирование отменено, изменения не сохранены")
+    
+    print("Изменения сканирования отменены")
+    return "Изменения сканирования отменены. Новые программы сохранены, отсутствующие файлы не удалены."
 
 def extract_category_from_path(file_path, root_directory):
     """

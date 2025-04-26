@@ -222,68 +222,14 @@ function deleteCategory(categoryName) {
         return;
     }
     
-    if (!confirm(`Вы уверены, что хотите удалить категорию "${categoryName}" и все программы в ней?`)) {
-        return;
-    }
-    
-    console.log(`Отправка запроса на удаление категории: ${categoryName}`);
-    
-    // Показываем индикатор загрузки в виде Toast
-    showToast("Информация", "Удаление категории...", "info");
-    
-    // Отправляем запрос на сервер
-    fetch(`/remove_category?category=${encodeURIComponent(categoryName)}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Сервер вернул ${response.status}: ${response.statusText}`);
-            }
-            return response.text();
-        })
-        .then(data => {
-            console.log("Ответ сервера:", data);
-            showToast("Категория удалена", data);
-            // Перезагружаем страницу
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-        })
-        .catch(error => {
-            console.error("Ошибка при удалении категории:", error);
-            showToast("Ошибка", "Не удалось удалить категорию: " + error, "danger");
-        });
+    // Открываем модальное окно со списком программ для категории
+    showProgramListModal(OPERATION_TYPES.REMOVE_CATEGORY, categoryName);
 }
 
 // Функция для очистки всех избранных элементов
 function clearAllFavorites() {
-    if (!confirm("Вы уверены, что хотите удалить из списка все программы, находящиеся в избранном?")) {
-        return;
-    }
-    
-    console.log("Отправка запроса на удаление всех избранных программ");
-    
-    // Показываем индикатор загрузки в виде Toast
-    showToast("Информация", "Удаление программ из избранного...", "info");
-    
-    // Отправляем запрос на сервер
-    fetch('/clear_favorites')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Сервер вернул ${response.status}: ${response.statusText}`);
-            }
-            return response.text();
-        })
-        .then(data => {
-            console.log("Ответ сервера:", data);
-            showToast("Программы удалены", data);
-            // Перезагружаем страницу
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-        })
-        .catch(error => {
-            console.error("Ошибка при удалении программ:", error);
-            showToast("Ошибка", "Не удалось удалить программы: " + error, "danger");
-        });
+    // Открываем модальное окно со списком избранных программ
+    showProgramListModal(OPERATION_TYPES.REMOVE_FAVORITES);
 }
 
 // Функция для показа модального окна изменения цвета заголовка

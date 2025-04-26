@@ -86,14 +86,16 @@ class TemplateEngine:
             css_template = self.load_template('css/style.css')
             
             # Загрузка модульных JavaScript файлов в нужном порядке
+            js_constants = self.load_template('js/main.constants.js')  # Сначала загружаем константы
             js_utils = self.load_template('js/main.utils.js')
             js_api = self.load_template('js/main.api.js')
+            js_list = self.load_template('js/main.list.js')  # Добавляем файл модального окна списков
             js_ui = self.load_template('js/main.ui.js')
             js_events = self.load_template('js/main.events.js')
             js_main = self.load_template('js/main.js')
             
             if not all([main_template, program_card_template, category_template, nav_item_template, css_template, 
-                       js_utils, js_api, js_ui, js_events, js_main]):
+                       js_constants, js_utils, js_api, js_list, js_ui, js_events, js_main]):
                 return "<h1>Ошибка: один или несколько шаблонов не найдены</h1>"
             
             # Заменяем название приложения
@@ -103,8 +105,8 @@ class TemplateEngine:
             css_style_tag = f'<style>\n{css_template}\n</style>'
             
             # Объединяем JavaScript модули в правильном порядке и встраиваем
-            # Порядок важен: сначала утилиты, затем API, UI, события и наконец главный модуль
-            combined_js = f"{js_utils}\n\n{js_api}\n\n{js_ui}\n\n{js_events}\n\n{js_main}"
+            # Порядок важен: сначала константы, утилиты, API, список, UI, события и наконец главный модуль
+            combined_js = f"{js_constants}\n\n{js_utils}\n\n{js_api}\n\n{js_list}\n\n{js_ui}\n\n{js_events}\n\n{js_main}"
             javascript_tag = f'<script>\n{combined_js}\n</script>'
             
             main_template = main_template.replace('<!-- CSS_PLACEHOLDER -->', css_style_tag)

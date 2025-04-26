@@ -234,6 +234,16 @@ def register_routes():
         except Exception as e:
             return handle_api_error(e, "при применении изменений сканирования")
 
+    @app.route('/cancel_scan_changes')
+    def api_cancel_scan_changes():
+        """Отменяет изменения, обнаруженные при сканировании"""
+        try:
+            from scan_operations import cancel_scan_changes
+            result = cancel_scan_changes()
+            return Response(result, content_type='text/plain; charset=utf-8')
+        except Exception as e:
+            return handle_api_error(e, "при отмене изменений сканирования")
+
     @app.route('/remove/<int:program_index>', methods=['DELETE', 'GET'])
     def remove_program(program_index):
         """Обрабатывает запрос на удаление программы."""
@@ -515,3 +525,134 @@ def register_routes():
             import traceback
             traceback.print_exc()
             return f"Ошибка: {str(e)}"
+
+    @app.route('/api/programs')
+    def api_get_programs():
+        """API для получения списка программ с возможностью фильтрации по категории или избранным"""
+        try:
+            # Получаем параметры фильтрации
+            category = request.args.get('category', '').strip()
+            favorites = request.args.get('favorites', '').lower() == 'true'
+            
+            # Фильтруем программы
+            filtered_programs = []
+            for program in EXECUTABLE:
+                # Получаем оригинальную категорию программы
+                original_category = getattr(program, 'original_category', program.category)
+                from html_utils import unescape_html
+                
+                if hasattr(program, 'original_category'):
+                    program_category = original_category
+                else:
+                    program_category = unescape_html(program.category)
+                
+                # Проверяем условия фильтрации
+                if favorites and program.is_favorite:
+                    # Добавляем программу, если она в избранном и запрошены избранные
+                    filtered_programs.append(program)
+                elif category and program_category.lower() == category.lower():
+                    # Добавляем программу, если она в запрошенной категории
+                    filtered_programs.append(program)
+                elif not category and not favorites:
+                    # Добавляем программу, если нет фильтрации
+                    filtered_programs.append(program)
+            
+            # Подготавливаем данные для передачи
+            program_list = []
+            for idx, program in enumerate(filtered_programs):
+                # Формируем простой идентификатор для программы
+                program_id = f"prog_{idx}"
+                
+                program_info = {
+                    "id": program_id,
+                    "name": os.path.basename(program.path),
+                    "path": program.path,
+                    "category": getattr(program, 'original_category', program.category),
+                    "description": getattr(program, 'description', ''),
+                    "is_favorite": getattr(program, 'is_favorite', False),
+                    "is_hidden": getattr(program, 'is_hidden', False),
+                    "header_color": getattr(program, 'header_color', '#')
+                }
+                program_list.append(program_info)
+            
+            response_data = {
+                "programs": program_list,
+                "total": len(program_list)
+            }
+            
+            return Response(json.dumps(response_data), content_type='application/json; charset=utf-8')
+        except Exception as e:
+            return handle_api_error(e, "при получении списка программ")
+
+    @app.route('/remove_programs', methods=['POST'])
+    def api_remove_programs():
+        """Удаляет несколько программ по указанным путям"""
+        try:
+            # Получаем данные из тела запроса
+            data = request.get_json()
+            
+            if not data or 'paths' not in data:
+                return Response("Ошибка: не указаны пути к программам", status=400, content_type='text/plain; charset=utf-8')
+            
+            paths = data['paths']
+            if not paths or not isinstance(paths, list):
+                return Response("Ошибка: некорректный формат списка путей", status=400, content_type='text/plain; charset=utf-8')
+            
+            # Счетчик удаленных программ
+            removed_count = 0
+            
+            # Удаляем программы по одной
+            for path in paths:
+                # Нормализуем путь
+                normalized_path = os.path.normpath(path.strip())
+                
+                # Пытаемся удалить программу
+                if remove_program_from_list(normalized_path, save_program_list_func):
+                    removed_count += 1
+            
+            # Возвращаем результат
+            if removed_count > 0:
+                return Response(f"Удалено программ: {removed_count}", content_type='text/plain; charset=utf-8')
+            else:
+                return Response("Не удалось удалить ни одной программы", content_type='text/plain; charset=utf-8')
+        except Exception as e:
+            return handle_api_error(e, "при массовом удалении программ")
+
+    @app.route('/remove_from_favorites', methods=['POST'])
+    def api_remove_from_favorites():
+        """Удаляет программы из избранного по указанным путям"""
+        try:
+            # Получаем данные из тела запроса
+            data = request.get_json()
+            
+            if not data or 'paths' not in data:
+                return Response("Ошибка: не указаны пути к программам", status=400, content_type='text/plain; charset=utf-8')
+            
+            paths = data['paths']
+            if not paths or not isinstance(paths, list):
+                return Response("Ошибка: некорректный формат списка путей", status=400, content_type='text/plain; charset=utf-8')
+            
+            # Счетчик обработанных программ
+            removed_count = 0
+            
+            # Удаляем программы из избранного
+            for path in paths:
+                # Нормализуем путь
+                normalized_path = os.path.normpath(path.strip())
+                
+                # Ищем программу в списке
+                for program in EXECUTABLE:
+                    if os.path.normpath(program.path.strip()) == normalized_path and program.is_favorite:
+                        # Удаляем из избранного
+                        program.is_favorite = False
+                        removed_count += 1
+                        break
+            
+            # Сохраняем изменения, если были удаления
+            if removed_count > 0:
+                save_program_list_func()
+                return Response(f"Удалено из избранного программ: {removed_count}", content_type='text/plain; charset=utf-8')
+            else:
+                return Response("Не удалось удалить ни одной программы из избранного", content_type='text/plain; charset=utf-8')
+        except Exception as e:
+            return handle_api_error(e, "при удалении из избранного")
