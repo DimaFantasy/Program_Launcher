@@ -37,12 +37,13 @@ def clear_favorites(save_func):
 
 class ProgramInfo:
     """Класс для хранения информации о программе"""
-    def __init__(self, path, category, description, is_favorite=False, is_hidden=False):
+    def __init__(self, path, category, description, is_favorite=False, is_hidden=False, header_color="#"):
         self.path = path
         self.category = category
         self.description = description
         self.is_favorite = is_favorite
         self.is_hidden = is_hidden
+        self.header_color = header_color  # Новое поле для хранения цвета заголовка
 
 def toggle_favorite(program_path, save_program_list_func):
     """Переключает статус избранного для программы"""

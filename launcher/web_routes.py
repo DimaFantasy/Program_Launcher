@@ -1,5 +1,6 @@
 import os
 import json
+import urllib.parse
 import traceback
 from flask import request, Response, jsonify, abort
 from file_description import get_file_description
@@ -393,3 +394,124 @@ def register_routes():
             return Response("Сервер останавливается...", content_type='text/plain; charset=utf-8')
         except Exception as e:
             return handle_api_error(e, "при остановке сервера")
+
+    @app.route('/change_header_color')
+    def change_header_color():
+        """Изменяет цвет заголовка программы, категории или избранного"""
+        try:
+            # Получаем параметры из запроса
+            item_path = request.args.get('path')
+            header_color = request.args.get('color', '#')  # Цвет по умолчанию - '#'
+            item_type = request.args.get('type', 'program')  # Тип по умолчанию - 'program'
+            apply_to_all = request.args.get('apply_to_all', '0') == '1'  # Применить ко всем программам в категории
+            
+            if not item_path:
+                return "Не указан путь к программе или название категории"
+            
+            # Декодируем URL-закодированный путь
+            try:
+                if '%' in item_path:
+                    item_path = urllib.parse.unquote(item_path)
+                    print(f"Путь после декодирования: {item_path}")
+            except Exception as e:
+                print(f"Ошибка при декодировании пути: {str(e)}")
+                # Продолжаем с оригинальным путем
+            
+            # Очищаем путь от лишних пробелов
+            item_path = item_path.strip()
+            
+            # Флаг для отслеживания, работаем ли мы с избранным
+            is_favorites_mode = item_type == 'favorites' or (item_type == 'category' and item_path.lower() == 'избранное')
+            
+            print(f"Тип элемента: {item_type}")
+            print(f"Работаем с избранным: {is_favorites_mode}")
+            
+            if item_type == 'category' or is_favorites_mode:
+                # Обработка изменения цвета категории или всех избранных
+                category_name = item_path
+                programs_updated = 0
+                category_color_updated = False
+                
+                print(f"Изменение цвета для {'избранного' if is_favorites_mode else 'категории'}: {category_name}")
+                print(f"Новый цвет: {header_color}")
+                print(f"Применить ко всем программам: {apply_to_all}")
+                
+                # Обновляем цвета программ
+                for program in EXECUTABLE:
+                    should_update = False
+                    
+                    if is_favorites_mode:
+                        # Если работаем с избранным, обновляем все избранные программы
+                        should_update = program.is_favorite
+                        if should_update:
+                            print(f"Найдена избранная программа: {program.path}")
+                    else:
+                        # Иначе обновляем программы из указанной категории
+                        # Используем оригинальную категорию (без экранирования HTML)
+                        original_category = getattr(program, 'original_category', program.category)
+                        from html_utils import unescape_html
+                        if hasattr(program, 'original_category'):
+                            program_category = original_category
+                        else:
+                            program_category = unescape_html(program.category)
+                        
+                        # Проверяем, принадлежит ли программа к данной категории
+                        should_update = program_category.lower() == category_name.lower()
+                        if should_update:
+                            print(f"Найдена программа из категории {category_name}: {program.path}")
+                    
+                    # Если нужно обновить эту программу
+                    if should_update:
+                        # Всегда обновляем цвет всех программ в категории
+                        program.header_color = header_color
+                        programs_updated += 1
+                        print(f"Обновлен цвет программы: {program.path}, Избранное: {getattr(program, 'is_favorite', False)}, Новый цвет: {header_color}")
+                        category_color_updated = True
+                
+                if programs_updated > 0:
+                    # Сохраняем изменения
+                    result = save_program_list_func()
+                    if result:
+                        entity_type = "избранного" if is_favorites_mode else f"категории '{category_name}'"
+                        return f"Цвет {entity_type} изменен на '{header_color}'. Обновлено программ: {programs_updated}"
+                    else:
+                        return "Ошибка при сохранении изменений"
+                else:
+                    if is_favorites_mode:
+                        return "Программы в избранном не найдены"
+                    else:
+                        return f"Программы в категории '{category_name}' не найдены"
+            else:
+                # Обработка изменения цвета отдельной программы
+                print(f"Изменение цвета заголовка для программы: {item_path}")
+                print(f"Новый цвет заголовка: {header_color}")
+                
+                # Нормализуем путь перед поиском
+                normalized_path = os.path.normpath(item_path)
+                
+                # Ищем программу в списке
+                found = False
+                for program in EXECUTABLE:
+                    if os.path.normpath(program.path.strip()) == normalized_path:
+                        # Устанавливаем новый цвет заголовка
+                        program.header_color = header_color
+                        found = True
+                        print(f"Программа найдена, цвет заголовка изменен на: {header_color}")
+                        break
+                
+                if not found:
+                    print(f"Программа не найдена: {item_path}")
+                    return "Программа не найдена"
+                
+                # Сохраняем изменения
+                result = save_program_list_func()
+                if result:
+                    return f"Цвет заголовка для '{os.path.basename(item_path)}' изменен на '{header_color}'"
+                else:
+                    return "Ошибка при сохранении изменений"
+            
+        except Exception as e:
+            print(f"Ошибка при изменении цвета: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return f"Ошибка: {str(e)}"

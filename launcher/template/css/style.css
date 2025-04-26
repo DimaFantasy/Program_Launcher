@@ -2,11 +2,187 @@
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; padding-top: 60px; }
 .navbar { background-color: #343a40; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
 .navbar-brand { font-weight: 600; color: #fff; }
-.card { transition: transform 0.2s; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-.card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+.card { 
+    margin-bottom: 15px; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+    border: 1px solid #ddd; 
+}
+.card:hover { 
+    z-index: 20; 
+}
 .card-title { font-weight: 600; color: #343a40; }
 .card-text { color: #6c757d; font-size: 0.9rem; }
 .program-path { font-size: 0.8rem; color: #6c757d; font-family: monospace; }
+
+/* Стили для заголовка карточки программы */
+.card-header {
+    background: #f0f0f0;
+    border-bottom: 1px solid #ddd;
+    padding: 0.25rem 0.5rem;
+    min-height: 32px;
+    color: #333;
+    display: flex;
+    align-items: center;
+}
+
+.program-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    min-width: 18px;
+}
+
+.card-header .card-title {
+    font-size: 0.85rem;
+    margin-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100% - 70px);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    text-shadow: none;
+    -webkit-font-smoothing: subpixel-antialiased; /* Улучшает четкость текста */
+    -moz-osx-font-smoothing: auto;
+}
+
+.card-header .btn-favorite,
+.card-header .btn-remove,
+.card-header .btn-hide,
+.card-header .btn-color {
+    position: static;
+    padding: 0 1px;
+    margin-left: 2px;
+    font-size: 0.8rem;
+    /* Улучшаем контраст добавлением фона кнопки */
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 3px;
+    width: 20px;
+    height: 20px;
+    display: inline-flex; /* Меняем на inline-flex для горизонтального расположения */
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+/* Создаем контейнер для кнопок, чтобы они располагались горизонтально */
+.card-header .btn-group-sm {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2px;
+}
+
+/* Добавляем стиль для кнопок в заголовке, чтобы они лучше выделялись на цветном фоне */
+.card-header .btn-favorite i,
+.card-header .btn-remove i,
+.card-header .btn-hide i,
+.card-header .btn-color i {
+    /* Убираем тень, которая может вызывать размытие */
+    text-shadow: none;
+    /* Используем контрастный цвет вместо тени */
+    color: rgba(0, 0, 0, 0.8);
+    /* Сохраняем размер */
+    font-size: 0.9rem;
+    /* Добавляем контрастную обводку вместо тени */
+    -webkit-text-stroke: 0.5px rgba(255, 255, 255, 0.5);
+}
+
+/* Для темной темы используем светлые цвета */
+body.dark-theme .card-header .btn-favorite i,
+body.dark-theme .card-header .btn-remove i,
+body.dark-theme .card-header .btn-hide i,
+body.dark-theme .card-header .btn-color i {
+    color: rgba(255, 255, 255, 0.8);
+    -webkit-text-stroke: 0.5px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme .card-header .btn-favorite,
+body.dark-theme .card-header .btn-remove,
+body.dark-theme .card-header .btn-hide,
+body.dark-theme .card-header .btn-color {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Особый стиль для кнопок при наведении мыши */
+.card-header .btn-favorite:hover i,
+.card-header .btn-remove:hover i,
+.card-header .btn-hide:hover i,
+.card-header .btn-color:hover i {
+    text-shadow: none;
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+    /* Увеличиваем контраст при наведении */
+    color: #000;
+    -webkit-text-stroke: 0.5px rgba(255, 255, 255, 0.8);
+}
+
+/* Темная тема для наведения */
+body.dark-theme .card-header .btn-favorite:hover i,
+body.dark-theme .card-header .btn-remove:hover i,
+body.dark-theme .card-header .btn-hide:hover i,
+body.dark-theme .card-header .btn-color:hover i {
+    color: #fff;
+    -webkit-text-stroke: 0.5px rgba(0, 0, 0, 0.8);
+}
+
+.card-header .btn-favorite:hover,
+.card-header .btn-remove:hover,
+.card-header .btn-hide:hover,
+.card-header .btn-color:hover {
+    background-color: rgba(255, 255, 255, 0.8);
+    transform: scale(1.1);
+}
+
+body.dark-theme .card-header .btn-favorite:hover,
+body.dark-theme .card-header .btn-remove:hover,
+body.dark-theme .card-header .btn-hide:hover,
+body.dark-theme .card-header .btn-color:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Для активных состояний кнопок тоже добавляем выделение */
+.card-header .btn-favorite.active i,
+.card-header .btn-hide.active i {
+    text-shadow: none;
+    color: #ffc107;
+    -webkit-text-stroke: 0.5px rgba(0, 0, 0, 0.5);
+}
+
+.card-header .btn-favorite.active {
+    background-color: rgba(255, 193, 7, 0.5);
+}
+
+.card-header .btn-favorite.active i {
+    color: #000;
+}
+
+.card-header .btn-hide.active {
+    background-color: rgba(23, 162, 184, 0.5);
+}
+
+.card-header .btn-hide.active i {
+    color: #000;
+}
+
+/* Фиксация для темной темы */
+body.dark-theme .card-header {
+    background: #3a3a3a;
+    border-bottom: 1px solid #444;
+    color: #e9ecef;
+}
+
+body.dark-theme .card-header .btn-hide.active {
+    background-color: rgba(23, 162, 184, 0.7);
+}
+
+body.dark-theme .card-header .btn-hide.active i {
+    color: #fff;
+}
 
 /* Стили для несуществующих файлов */
 .card.file-not-exists {
@@ -150,33 +326,41 @@ body.dark-theme .theme-icon-light {
 
 /* Стили для заголовков категорий */
 .category-header-container {
+    position: relative; /* Заменяем sticky на relative */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #007bff;
+    background: linear-gradient(to bottom, #4d90fe, #357ae8);
     color: white;
-    padding: 10px 15px;
-    border-radius: 5px;
-    margin: 20px 0 15px 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 5px 10px;
+    border-radius: 4px 4px 0 0;
+    margin: 0; /* Убираем отступ сверху */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    border-bottom: 1px solid #2e6da4;
+    z-index: 5; /* Меньший z-index чем у меню */
 }
 
 .category-header {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .category-buttons {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 5px;
 }
 
 .rename-category-btn {
     color: white;
     border-color: rgba(255, 255, 255, 0.5);
     transition: all 0.3s ease;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.85rem;
 }
 
 .rename-category-btn:hover {
@@ -185,10 +369,25 @@ body.dark-theme .theme-icon-light {
     color: white;
 }
 
+/* Общий стиль для кнопок outline-light в заголовках категорий */
+.category-buttons .btn-outline-light:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-color: white !important;
+    color: white !important;
+}
+
+/* Темная тема для кнопок в категориях */
+body.dark-theme .category-buttons .btn-outline-light:hover {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    border-color: white !important;
+    color: white !important;
+}
+
 /* Особый стиль для категории избранного */
 .favorites-category {
-    background-color: #ffc107 !important;
+    background: linear-gradient(to bottom, #ffc107, #e0a800) !important;
     color: #343a40 !important;
+    border-bottom: 1px solid #d39e00;
 }
 
 .favorites-category .rename-category-btn {
@@ -295,11 +494,25 @@ body.dark-theme .theme-icon-light {
 .nav-scroll-container::-webkit-scrollbar-thumb { background-color: #bdbdbd; border-radius: 3px; }
 .nav-scroll-container::-webkit-scrollbar-track { background-color: #f0f0f0; }
 .badge { font-size: 0.6rem; vertical-align: text-top; }
-.btn-favorite { color: #aaa; background: none; border: none; padding: 3px; position: absolute; top: 5px; right: 35px; }
-.btn-favorite:hover { color: #ffc107; }
+
+/* Эти стили больше не нужны, они перекрывают наши улучшенные стили выше */
+/* .btn-favorite:hover { color: #ffc107; }
 .btn-favorite.active { color: #ffc107; }
-.btn-remove { color: #aaa; background: none; border: none; padding: 3px; position: absolute; top: 5px; right: 5px; }
 .btn-remove:hover { color: #dc3545; }
+.btn-hide:hover { color: #17a2b8; }
+.btn-hide.active { color: #17a2b8; }
+.btn-color:hover { color: #6f42c1; } */
+
+.btn-favorite, 
+.btn-remove, 
+.btn-hide,
+.btn-color {
+    color: #aaa; 
+    background: none; 
+    border: none; 
+    padding: 3px;
+    transition: all 0.2s ease;
+}
 
 /* Стили для закрепления активной категории в левом меню при прокрутке */
 :root {
@@ -365,22 +578,6 @@ body.dark-theme .theme-icon-light {
     border-radius: 0 4px 4px 0;
     z-index: 1000;
     transition: all 0.2s ease;
-}
-
-.btn-hide { 
-    color: #aaa; 
-    background: none; 
-    border: none; 
-    padding: 3px; 
-    position: absolute; 
-    top: 5px; 
-    right: 65px; 
-}
-.btn-hide:hover { 
-    color: #17a2b8; 
-}
-.btn-hide.active { 
-    color: #17a2b8; 
 }
 
 /* Стили для скрытых программ */
@@ -508,4 +705,129 @@ body.show-hidden .program-card[data-hidden="true"]::before {
     border-radius: 50%;
     background-color: #17a2b8;
     z-index: 1;
+}
+
+/* Стиль для контейнера категории как окна */
+.category-container {
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1), inset 0 0 0 1px rgba(255,255,255,0.5);
+    background: #f8f9fa;
+    overflow: hidden;
+}
+
+/* Стиль для содержимого категории */
+.category-content {
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 0 0 4px 4px;
+}
+
+/* Темная тема для категорий */
+body.dark-theme .category-header-container {
+    background: linear-gradient(to bottom, #2a3d5a, #1c2d4a);
+    border-bottom: 1px solid #1a1a1a;
+}
+
+body.dark-theme .category-container {
+    border: 1px solid #444;
+    background: #343a40;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.1);
+}
+
+body.dark-theme .category-content {
+    background: #343a40;
+}
+
+body.dark-theme .card {
+    border: 1px solid #555;
+}
+
+/* Стили для содержимого программ как окна */
+.program-window-content {
+    background-color: #fff;
+    border-radius: 3px;
+    padding: 8px;
+    box-shadow: inset 0 0 3px rgba(0,0,0,0.1);
+}
+
+/* Темная тема для окон программ */
+body.dark-theme .program-window-content {
+    background-color: #2c3034;
+    box-shadow: inset 0 0 3px rgba(0,0,0,0.3);
+}
+
+/* Стили для кнопок выбора цвета в модальном окне */
+.color-buttons-container {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.color-buttons-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.color-preset-btn {
+    width: 100%;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 6px 0;
+    border-width: 2px;
+    background-color: rgba(255, 255, 255, 0.9);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.color-preset-btn:hover {
+    transform: scale(1.05);
+    background-color: rgba(255, 255, 255, 0.95);
+    opacity: 1;
+    z-index: 1;
+}
+
+.color-preset-btn:active {
+    background-color: rgba(255, 255, 255, 0.8);
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+}
+
+/* Темная тема для кнопок выбора цвета */
+body.dark-theme .color-preset-btn {
+    background-color: rgba(52, 58, 64, 0.85);
+}
+
+body.dark-theme .btn-outline-light.color-preset-btn {
+    color: #fff;
+}
+
+body.dark-theme .color-preset-btn:hover {
+    background-color: rgba(52, 58, 64, 0.95);
+}
+
+/* Улучшенный стиль для чекбокса в навигации категорий,
+   чтобы тени не обрезались ни с одной стороны */
+.nav-category-item .form-check {
+    margin: 0 5px !important;
+    padding: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.nav-category-item .form-check-input {
+    position: relative;
+    margin: 0 !important;
+    float: none !important;
+    box-shadow: 0 0 4px rgba(13, 110, 253, 0.5) !important;
+}
+
+.nav-category-item .form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.5) !important;
 }

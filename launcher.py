@@ -11,7 +11,7 @@ from flask import Flask, Response
 from markupsafe import escape
 
 # Основные настройки
-APPLICATION_NAME = "USB Bootable Tools Launcher v2"
+APPLICATION_NAME = "USB Bootable Tools Launcher v3"
 VERSION = "2.1.0"
 
 # Настройки сканирования

@@ -41,11 +41,13 @@
                     <ul class="nav nav-pills flex-column">
                         <!-- CATEGORY_NAV_PLACEHOLDER -->
                         <li class="nav-item mt-3">
-                            <div class="show-hidden-container">
-                                <input class="form-check-input" type="checkbox" id="showHiddenCheck">
-                                <label class="form-check-label" for="showHiddenCheck">
-                                    <i class="bi bi-eye"></i> Скрытые
-                                </label>
+                            <div class="nav-link nav-category-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="category-name">Скрытые</span>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="showHiddenCheck">
+                                </div>
                             </div>
                         </li>
                     </ul>
@@ -170,6 +172,72 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-primary" id="saveMovedFavorites">Переместить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для выбора цвета заголовка программы или категории -->
+<div class="modal fade" id="colorModal" tabindex="-1" aria-labelledby="colorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="colorModalTitle">Изменение цвета заголовка</h5>
+                <button type="button" class="btn btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="colorItemPath" value="">
+                <input type="hidden" id="colorItemType" value="program">
+                <div class="mb-3">
+                    <label for="colorPicker" class="form-label">Выберите цвет:</label>
+                    <input type="color" class="form-control form-control-color" id="colorPicker" value="#4d90fe">
+                </div>
+                
+                <!-- Кнопка цвета по умолчанию на всю ширину -->
+                <div class="mb-3">
+                    <div class="color-buttons-container">
+                        <button type="button" class="btn btn-outline-secondary w-100 mb-2" id="defaultColorBtn" onclick="setDefaultColor()">
+                            Цвет по умолчанию
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Блок кнопок для быстрого выбора цвета -->
+                <div class="mb-3">
+                    <div class="color-buttons-container">
+                        <!-- Первый ряд кнопок -->
+                        <div class="color-buttons-row">
+                            <button type="button" class="btn btn-sm color-preset-btn" style="background-color: #ff5252;" onclick="setPresetColor('#ff5252')"></button>
+                            <button type="button" class="btn btn-sm color-preset-btn" style="background-color: #ff4081;" onclick="setPresetColor('#ff4081')"></button>
+                            <button type="button" class="btn btn-sm color-preset-btn" style="background-color: #e040fb;" onclick="setPresetColor('#e040fb')"></button>
+                            <button type="button" class="btn btn-sm color-preset-btn" style="background-color: #7c4dff;" onclick="setPresetColor('#7c4dff')"></button>
+                            <button type="button" class="btn btn-sm color-preset-btn" style="background-color: #536dfe;" onclick="setPresetColor('#536dfe')"></button>
+                            <button type="button" class="btn btn-sm color-preset-btn" style="background-color: #448aff;" onclick="setPresetColor('#448aff')"></button>
+                        </div>
+                        <!-- Второй ряд кнопок -->
+                        <div class="color-buttons-row">
+                            <button type="button" class="btn btn-sm color-preset-btn" style="background-color: #40c4ff;" onclick="setPresetColor('#40c4ff')"></button>
+                            <button type="button" class="btn btn-sm color-preset-btn" style="background-color: #18ffff;" onclick="setPresetColor('#18ffff')"></button>
+                            <button type="button" class="btn btn-sm color-preset-btn" style="background-color: #69f0ae;" onclick="setPresetColor('#69f0ae')"></button>
+                            <button type="button" class="btn btn-sm color-preset-btn" style="background-color: #b2ff59;" onclick="setPresetColor('#b2ff59')"></button>
+                            <button type="button" class="btn btn-sm color-preset-btn" style="background-color: #ffff00;" onclick="setPresetColor('#ffff00')"></button>
+                            <button type="button" class="btn btn-sm color-preset-btn" style="background-color: #ffd740;" onclick="setPresetColor('#ffd740')"></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header" id="colorPreview" style="background-color: #4d90fe; color: white;">
+                        <i class="bi bi-app"></i> Предпросмотр заголовка
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted">Так будет выглядеть заголовок с выбранным цветом</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveColor">Сохранить</button>
             </div>
         </div>
     </div>

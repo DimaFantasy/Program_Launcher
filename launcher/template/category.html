@@ -1,16 +1,23 @@
 <!-- Шаблон для категории программ -->
 <div class="category-container" id="{category_id}" data-category-original="{category_id_original}">
-    <div class="category-header-container {category_header_class}">
+    <div class="category-header-container {category_header_class}" style="{category_header_style}">
         <h2 class="category-header">
             {category_icon} {category_name}
         </h2>
         <div class="category-buttons">
-            {delete_category_button}
-            {rename_button}
+            <button type="button" class="btn btn-sm btn-outline-light category-color-btn" 
+                    onclick="showCategoryColorModal('{category_name}', '{category_color}', event)" 
+                    title="Изменить цвет категории">
+                <i class="bi bi-palette"></i>
+            </button>
             {move_favorites_button}
+            {rename_button}
+            {delete_category_button}
         </div>
     </div>
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-        <!-- EXECUTABLE_PLACEHOLDER -->
+    <div class="category-content">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+            <!-- EXECUTABLE_PLACEHOLDER -->
+        </div>
     </div>
 </div>

@@ -84,17 +84,28 @@ class TemplateEngine:
             
             # Загружаем CSS и JavaScript из поддиректорий
             css_template = self.load_template('css/style.css')
-            javascript_template = self.load_template('js/script.js')
             
-            if not all([main_template, program_card_template, category_template, nav_item_template, css_template, javascript_template]):
+            # Загрузка модульных JavaScript файлов в нужном порядке
+            js_utils = self.load_template('js/main.utils.js')
+            js_api = self.load_template('js/main.api.js')
+            js_ui = self.load_template('js/main.ui.js')
+            js_events = self.load_template('js/main.events.js')
+            js_main = self.load_template('js/main.js')
+            
+            if not all([main_template, program_card_template, category_template, nav_item_template, css_template, 
+                       js_utils, js_api, js_ui, js_events, js_main]):
                 return "<h1>Ошибка: один или несколько шаблонов не найдены</h1>"
             
             # Заменяем название приложения
             main_template = main_template.replace('Programs-2k10 Launcher', app_name)
             
-            # Встраиваем CSS и JavaScript в HTML
+            # Встраиваем CSS в HTML
             css_style_tag = f'<style>\n{css_template}\n</style>'
-            javascript_tag = f'<script>\n{javascript_template}\n</script>'
+            
+            # Объединяем JavaScript модули в правильном порядке и встраиваем
+            # Порядок важен: сначала утилиты, затем API, UI, события и наконец главный модуль
+            combined_js = f"{js_utils}\n\n{js_api}\n\n{js_ui}\n\n{js_events}\n\n{js_main}"
+            javascript_tag = f'<script>\n{combined_js}\n</script>'
             
             main_template = main_template.replace('<!-- CSS_PLACEHOLDER -->', css_style_tag)
             main_template = main_template.replace('<!-- JAVASCRIPT_PLACEHOLDER -->', javascript_tag)
@@ -165,6 +176,13 @@ class TemplateEngine:
                     file_exists_class = "" if file_exists else "file-not-exists"
                     file_exists_indicator = "" if file_exists else '<span class="file-not-exists-indicator"><i class="bi bi-exclamation-triangle-fill"></i> Файл не существует</span>'
                     
+                    # Формируем стиль заголовка карточки на основе заданного цвета
+                    header_style = ""
+                    header_color = getattr(program, 'header_color', '#')
+                    if header_color and header_color != '#':
+                        # Если цвет указан (не '#'), используем его
+                        header_style = f"background-color: {header_color}; color: white;"
+                    
                     program_card = self.render_template(program_card_template,
                         program_name_lower=program_name.lower(),
                         category_lower=program.category.lower(),
@@ -184,7 +202,8 @@ class TemplateEngine:
                         program_path=escape(program.path),
                         category_attr=escape(program.category),
                         file_exists_class=file_exists_class,
-                        file_exists_indicator=file_exists_indicator
+                        file_exists_indicator=file_exists_indicator,
+                        header_style=header_style
                     )
                     favorite_programs_html.append(program_card)
                 
@@ -196,8 +215,8 @@ class TemplateEngine:
                     category_name="Избранное",
                     category_id_original="Избранное",
                     rename_button="",  # Пустая строка вместо кнопки
-                    delete_category_button=f'<button class="btn btn-sm btn-danger clear-favorites-btn" title="Удалить все программы из избранного в списке"><i class="bi bi-trash"></i> Удалить из списка</button>',
-                    move_favorites_button=f'<button class="btn btn-sm btn-primary move-favorites-btn ms-2" title="Переместить все избранные программы в новую категорию"><i class="bi bi-folder-symlink"></i> Переместить</button>'
+                    delete_category_button=f'<button class="btn btn-sm btn-danger clear-favorites-btn" title="Удалить все программы из избранного в списке"><i class="bi bi-trash"></i></button>',
+                    move_favorites_button=f'<button class="btn btn-sm btn-outline-light move-favorites-btn" title="Переместить все избранные программы в другую категорию"><i class="bi bi-folder-symlink"></i></button>'
                 )
                 favorites_category = favorites_category.replace("<!-- EXECUTABLE_PLACEHOLDER -->", "\n".join(favorite_programs_html))
                 content_categories.append(favorites_category)
@@ -226,6 +245,13 @@ class TemplateEngine:
                     file_exists_class = "" if file_exists else "file-not-exists"
                     file_exists_indicator = "" if file_exists else '<span class="file-not-exists-indicator"><i class="bi bi-exclamation-triangle-fill"></i> Файл не существует</span>'
                     
+                    # Формируем стиль заголовка карточки на основе заданного цвета
+                    header_style = ""
+                    header_color = getattr(program, 'header_color', '#')
+                    if header_color and header_color != '#':
+                        # Если цвет указан (не '#'), используем его
+                        header_style = f"background-color: {header_color}; color: white;"
+                    
                     program_card = self.render_template(program_card_template,
                         program_name_lower=program_name.lower(),
                         category_lower=program.category.lower(),
@@ -245,21 +271,36 @@ class TemplateEngine:
                         program_path=escape(program.path),
                         category_attr=escape(category),
                         file_exists_class=file_exists_class,
-                        file_exists_indicator=file_exists_indicator
+                        file_exists_indicator=file_exists_indicator,
+                        header_style=header_style
                     )
                     programs_html.append(program_card)
                 
+                # Формируем стиль заголовка категории
+                category_header_style = ""
+                category_color = ""
+                
+                # Проверяем, есть ли программы в этой категории с установленным цветом
+                for program in programs:
+                    header_color = getattr(program, 'header_color', '#')
+                    if header_color and header_color != '#':
+                        category_color = header_color
+                        category_header_style = f"background-color: {header_color}; color: white;"
+                        break
+                
                 # Добавляем кнопку переименования для обычных категорий
-                rename_button = f'<button class="btn btn-sm btn-outline-light rename-category-btn" data-category="{escape(category)}" title="Переименовать категорию"><i class="bi bi-pencil"></i> Переименовать</button>'
+                rename_button = f'<button class="btn btn-sm btn-outline-light rename-category-btn" data-category="{escape(category)}" title="Переименовать категорию"><i class="bi bi-pencil"></i></button>'
                 
                 # Добавляем кнопку удаления категории, но не для категории "Избранное"
                 delete_category_button = ""
                 if category.lower() != "избранное":
-                    delete_category_button = f'<button class="btn btn-sm btn-danger delete-category-btn ms-2" data-category="{escape(category)}" title="Удалить категорию из списка"><i class="bi bi-trash"></i> Удалить из списка</button>'
+                    delete_category_button = f'<button class="btn btn-sm btn-danger delete-category-btn" data-category="{escape(category)}" title="Удалить категорию из списка"><i class="bi bi-trash"></i></button>'
                 
                 category_html = self.render_template(category_template,
                     category_id=category_id,
                     category_header_class="",
+                    category_header_style=category_header_style,
+                    category_color=category_color,
                     category_icon=category_icons.get(category.lower(), self.default_icon),
                     category_name=escape(category),
                     category_id_original=escape(category),

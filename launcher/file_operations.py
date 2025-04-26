@@ -47,7 +47,9 @@ def load_program_list(program_class=None, base_directory=None):
     import re
     
     # Регулярные выражения для проверки форматов строк
-    # Формат с маркерами: путь||+||v||категория||описание или путь||*||h||категория||описание
+    # Формат с маркерами и цветом: путь||+||v||#ff0000||категория||описание или путь||*||h||#ff0000||категория||описание
+    re_full_format_color = re.compile(r'^(.+?)\|\|(\+|\*)\|\|(v|h)\|\|(#[0-9a-fA-F]{6}|#)\|\|(.+?)\|\|(.*)$')
+    # Формат с маркерами без цвета: путь||+||v||категория||описание или путь||*||h||категория||описание
     re_full_format = re.compile(r'^(.+?)\|\|(\+|\*)\|\|(v|h)\|\|(.+?)\|\|(.*)$')
     # Старый формат: путь||категория||описание
     re_old_format = re.compile(r'^(.+?)\|\|(.+?)\|\|(.*)$')
@@ -71,13 +73,22 @@ def load_program_list(program_class=None, base_directory=None):
                         path = ""
                         category = "Программы"  # Дефолтная категория
                         description = "Найдена в списке"  # Дефолтное описание
+                        header_color = "#"  # Дефолтный цвет заголовка (использовать цвет по умолчанию)
                         
-                        # Проверяем строку на соответствие форматам с помощью регулярных выражений
-                        match_full = re_full_format.match(line)
-                        match_old = re_old_format.match(line)
-                        match_path = re_path_only.match(line)
-                        
-                        if match_full:
+                        # Проверяем новый формат с цветом
+                        match_full_color = re_full_format_color.match(line)
+                        if match_full_color:
+                            # Полный формат с маркерами и цветом
+                            path = match_full_color.group(1).strip()
+                            is_favorite = match_full_color.group(2) == '*'
+                            is_hidden = match_full_color.group(3) == 'h'
+                            header_color = match_full_color.group(4).strip()
+                            category = match_full_color.group(5).strip()
+                            description = match_full_color.group(6).strip()
+                            print(f"Найдена программа в полном формате с цветом: {path}, Избранное: {is_favorite}, Скрыта: {is_hidden}, Цвет: {header_color}")
+                            
+                        # Проверяем стандартный формат с маркерами
+                        elif match_full := re_full_format.match(line):
                             # Полный формат с маркерами
                             path = match_full.group(1).strip()
                             is_favorite = match_full.group(2) == '*'
@@ -86,7 +97,7 @@ def load_program_list(program_class=None, base_directory=None):
                             description = match_full.group(5).strip()
                             print(f"Найдена программа в полном формате: {path}, Избранное: {is_favorite}, Скрыта: {is_hidden}")
                         
-                        elif match_path:
+                        elif match_path := re_path_only.match(line):
                             # Простой формат: только путь к программе
                             path = match_path.group(1).strip()
                             print(f"Найдена программа в простом формате: {path}")
@@ -100,7 +111,7 @@ def load_program_list(program_class=None, base_directory=None):
                             is_favorite = False
                             is_hidden = False
                         
-                        elif match_old:
+                        elif match_old := re_old_format.match(line):
                             # Старый формат: путь||категория||описание
                             path = match_old.group(1).strip()
                             category = match_old.group(2).strip()
@@ -164,6 +175,14 @@ def load_program_list(program_class=None, base_directory=None):
                                     description = matches[2].strip() if len(matches) > 2 else "Без описания"
                                     rest = None
                                 
+                                # Проверяем rest на наличие цвета заголовка
+                                if 'rest' in locals() and rest is not None:
+                                    # Проверка на цвет в формате #RRGGBB
+                                    color_match = re.search(r'#[0-9a-fA-F]{6}', rest)
+                                    if color_match:
+                                        header_color = color_match.group(0)
+                                        rest = rest.replace(header_color, '')
+                                
                                 # Проверка на маркер видимости в rest
                                 if 'rest' in locals() and rest is not None:
                                     if "||h||" in rest:
@@ -187,7 +206,7 @@ def load_program_list(program_class=None, base_directory=None):
                                             description = "Без описания"
                             
                             # Выводим отладочную информацию
-                            print(f"После старой логики: Программа: {path}, Избранное: {is_favorite}, Скрыта: {is_hidden}, Категория: {category}")
+                            print(f"После старой логики: Программа: {path}, Избранное: {is_favorite}, Скрыта: {is_hidden}, Категория: {category}, Цвет: {header_color}")
 
                         # Проверяем, что путь к программе не пустой
                         if not path:
@@ -207,7 +226,7 @@ def load_program_list(program_class=None, base_directory=None):
                         
                         if program_class:
                             # Создаем объект с экранированной категорией и НЕэкранированным описанием
-                            program = program_class(path, category_safe, description, is_favorite, is_hidden)
+                            program = program_class(path, category_safe, description, is_favorite, is_hidden, header_color)
                             program.original_category = category
                             program.original_description = description # Сохраняем оригинальное описание
                             program.file_exists = file_exists  # Добавляем информацию о существовании файла
@@ -220,6 +239,7 @@ def load_program_list(program_class=None, base_directory=None):
                                 'description': description,
                                 'is_favorite': is_favorite,
                                 'is_hidden': is_hidden,
+                                'header_color': header_color,
                                 'original_category': category,
                                 'original_description': description,
                                 'file_exists': file_exists  # Добавляем информацию о существовании файла
@@ -247,7 +267,7 @@ def load_program_list(program_class=None, base_directory=None):
 
 def save_program_list(programs, base_directory=None):
     """Сохраняет список программ в файл list.txt"""
-    # Используем переданную базовую директорию или глобальную
+    # Используем переднную базовую директорию или глобальную
     base_dir = base_directory or BASE_DIRECTORY
     if not base_dir:
         print("Ошибка: не задана базовая директория")
@@ -271,6 +291,7 @@ def save_program_list(programs, base_directory=None):
                     description = program.get('original_description', program['description'])
                     is_favorite = program.get('is_favorite', False)
                     is_hidden = program.get('is_hidden', False)
+                    header_color = program.get('header_color', '#')
                 else:
                     path = program.path.strip()
                     # Используем оригинальные значения, если они есть
@@ -278,6 +299,7 @@ def save_program_list(programs, base_directory=None):
                     description = getattr(program, 'original_description', program.description)
                     is_favorite = getattr(program, 'is_favorite', False)
                     is_hidden = getattr(program, 'is_hidden', False)
+                    header_color = getattr(program, 'header_color', '#')
                 
                 # Если категория или описание были экранированы, восстанавливаем исходные значения
                 category = unescape_html(category)
@@ -296,8 +318,8 @@ def save_program_list(programs, base_directory=None):
                 favorite_mark = "*" if is_favorite else "+"
                 visibility_mark = "h" if is_hidden else "v"
                 
-                # Создаем строку в корректном формате без двойных разделителей
-                final_string = f"{path}||{favorite_mark}||{visibility_mark}||{category}||{escaped_description}"
+                # Создаем строку в корректном формате с учетом цвета заголовка
+                final_string = f"{path}||{favorite_mark}||{visibility_mark}||{header_color}||{category}||{escaped_description}"
                 
                 f.write(final_string + "\n")
         
