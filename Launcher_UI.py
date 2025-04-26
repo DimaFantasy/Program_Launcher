@@ -11,8 +11,9 @@ from flask import Flask, Response
 from markupsafe import escape
 
 # Основные настройки
-APPLICATION_NAME = "USB Bootable Tools Launcher v3"
-VERSION = "2.1.0"
+APPLICATION_NAME = "Launcher_UI v3"
+SHORTCUT_NAME = "Launcher_UI"  # Имя для ярлыка (без версии)
+VERSION = "3.0.0"
 
 # Настройки сканирования
 # Расширения файлов, которые считаются исполняемыми
@@ -26,7 +27,7 @@ EXCLUDED_FILENAMES = ['uninstall.exe']
 
 # Серверные настройки
 # Путь к директории с шаблонами Flask
-TEMPLATE_PATH = "launcher"
+TEMPLATE_PATH = "Launcher_UI"
 # Порт, на котором будет запущен веб-сервер
 SERVER_PORT = 8100
 # Максимальный порт для поиска (если предыдущие заняты)
@@ -139,15 +140,15 @@ def create_shortcut_if_needed(target_dir=None):
     if target_dir and os.path.isdir(target_dir):
         try:
             # Путь к иконке
-            icon_path = os.path.join(SCRIPT_DIRECTORY, "launcher", "template", "icons", "launcher.ico")
-            shortcut_path = os.path.join(target_dir, f"{APPLICATION_NAME}.lnk")
+            icon_path = os.path.join(SCRIPT_DIRECTORY, "Launcher_UI", "template", "icons", "launcher.ico")
+            shortcut_path = os.path.join(target_dir, f"{SHORTCUT_NAME}.lnk")
             
             # Создаем ярлык с рабочей директорией = target_dir
             import win32com.client
             shell = win32com.client.Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut(shortcut_path)
             shortcut.TargetPath = sys.executable
-            shortcut.Arguments = f'"{os.path.join(SCRIPT_DIRECTORY, "launcher.py")}"'
+            shortcut.Arguments = f'"{os.path.join(SCRIPT_DIRECTORY, "Launcher_UI.py")}"'
             shortcut.WorkingDirectory = target_dir
             shortcut.IconLocation = icon_path if os.path.exists(icon_path) else ""
             shortcut.WindowStyle = 1  # 1 = Normal window
@@ -161,7 +162,7 @@ def create_shortcut_if_needed(target_dir=None):
 
 def parse_arguments():
     """Разбор аргументов командной строки"""
-    parser = argparse.ArgumentParser(description='USB Bootable Tools Launcher')
+    parser = argparse.ArgumentParser(description='Launcher_UI')
     parser.add_argument('directory', nargs='?', help='Директория для создания ярлыка')
     parser.add_argument('--version', action='version', version=f'%(prog)s {VERSION}')
     parser.add_argument('--debug', action='store_true', help='Включить режим отладки')

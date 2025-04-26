@@ -4,16 +4,16 @@ import winreg  # Встроенный модуль Python, не требует �
 
 # Вычисление путей относительно расположения скрипта
 SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Родительская директория (Program_Launcher)
-SCRIPT_PATH = os.path.join(SCRIPT_DIR, "launcher.py")  # Путь к launcher.py
-ICON_PATH = os.path.join(SCRIPT_DIR, "launcher", "template", "icons", "launcher.ico")  # Путь к иконке
+SCRIPT_PATH = os.path.join(SCRIPT_DIR, "Launcher_UI.py")  # Путь к Launcher_UI.py
+ICON_PATH = os.path.join(SCRIPT_DIR, "Launcher_UI", "template", "icons", "launcher.ico")  # Путь к иконке
 
 # Абсолютные пути для записи в реестр (с двойными обратными слешами)
 SCRIPT_PATH_REG = SCRIPT_PATH.replace("\\", "\\\\")
 ICON_PATH_REG = ICON_PATH.replace("\\", "\\\\")
 
 # Константы для установки
-MENU_NAME = "Создать ярлык Program Launcher"
-COMMAND_KEY = "Program_Launcher_SC"  # Ключ из reg-файла
+MENU_NAME = "Создать ярлык Launcher_UI"
+COMMAND_KEY = "Launcher_UI_SC"  # Ключ из reg-файла
 
 def install_context_menu():
     """Регистрирует контекстное меню для папок в проводнике Windows"""

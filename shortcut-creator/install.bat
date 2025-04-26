@@ -1,5 +1,5 @@
 @echo off
-echo Installing Program Launcher context menu...
+echo Installing Launcher_UI context menu...
 
 set PYTHON_FOUND=no
 
@@ -21,7 +21,7 @@ if not errorlevel 1 (
         echo 3. Right-click on it and select "Restart"
         echo.
         echo After restarting Explorer, right-click on any folder or inside any folder
-        echo to see the "Create Program Launcher shortcut" menu option.
+        echo to see the "Create Launcher_UI shortcut" menu option.
     )
     goto :end
 )
@@ -44,7 +44,7 @@ if not errorlevel 1 (
         echo 3. Right-click on it and select "Restart"
         echo.
         echo After restarting Explorer, right-click on any folder or inside any folder
-        echo to see the "Create Program Launcher shortcut" menu option.
+        echo to see the "Create Launcher_UI shortcut" menu option.
     )
     goto :end
 )
@@ -67,7 +67,7 @@ if not errorlevel 1 (
         echo 3. Right-click on it and select "Restart"
         echo.
         echo After restarting Explorer, right-click on any folder or inside any folder
-        echo to see the "Create Program Launcher shortcut" menu option.
+        echo to see the "Create Launcher_UI shortcut" menu option.
     )
     goto :end
 )

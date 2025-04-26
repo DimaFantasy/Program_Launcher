@@ -1,7 +1,7 @@
 @echo off
 setlocal
 
-echo Removing Program Launcher context menu...
+echo Removing Launcher_UI context menu...
 
 rem Set paths
 set "SCRIPT_DIR=%~dp0"
